@@ -41,6 +41,17 @@ class SocketTest extends TestCase
         $this->clearStreamMock();
     }
 
+    private function clearStreamMock(): void
+    {
+        if (in_array('ssl', stream_get_wrappers(), true)) {
+            stream_wrapper_unregister('ssl');
+        }
+
+        if (in_array('tcp', stream_get_wrappers(), true)) {
+            stream_wrapper_unregister('tcp');
+        }
+    }
+
     /**
      * @expectedException \Kafka\Exception
      * @expectedExceptionMessage Cannot open null host.
@@ -70,11 +81,59 @@ class SocketTest extends TestCase
 
         $sasl = $this->createMock(SaslMechanism::class);
         $sasl->expects($this->once())
-             ->method('authenticate')
-             ->with($this->isInstanceOf(Socket::class));
+            ->method('authenticate')
+            ->with($this->isInstanceOf(Socket::class));
 
         $socket = $this->mockStreamSocketClient($host, $port, null, $sasl);
         $socket->connect();
+    }
+
+    /**
+     * @return Stream|MockObject
+     */
+    private function initStreamStub(string $transport, string $host, int $port, bool $success = true): Stream
+    {
+        $uri = sprintf('%s://%s:%s', $transport, $host, $port);
+        stream_wrapper_register($transport, SimpleStream::class);
+
+        $streamMock = $this->createMock(Stream::class);
+        $streamMock->method('open')->with($uri, 'r+', 0)->willReturn($success);
+        $streamMock->method('option')->willReturn(true);
+
+        SimpleStream::setMock($streamMock);
+
+        return $streamMock;
+    }
+
+    /**
+     * @param string[] $mockMethod
+     *
+     * @return Socket|MockObject
+     */
+    private function mockStreamSocketClient(
+        string         $host,
+        int            $port,
+        ?Config        $config = null,
+        ?SaslMechanism $sasl = null,
+        array          $mockMethod = []
+    ): Socket
+    {
+        $socket = $this->getMockBuilder(Socket::class)
+            ->setMethods(array_merge(['createSocket'], $mockMethod))
+            ->setConstructorArgs([$host, $port, $config, $sasl])
+            ->getMock();
+
+        $socket->method('createSocket')
+            ->willReturnCallback(
+                function (string $remoteSocket, $context, ?int &$errno, ?string &$errstr) {
+                    $errno = 99;
+                    $errstr = 'my custom error';
+
+                    return @fopen($remoteSocket, 'r+', false, $context);
+                }
+            );
+
+        return $socket;
     }
 
     /**
@@ -94,18 +153,18 @@ class SocketTest extends TestCase
 
     public function testCreateStreamSsl(): void
     {
-        $host       = '127.0.0.1';
-        $port       = 9192;
+        $host = '127.0.0.1';
+        $port = 9192;
         $verifyPeer = false;
-        $cafile     = $this->root->url() . '/cafile';
-        $peerName   = 'kafka';
+        $cafile = $this->root->url() . '/cafile';
+        $peerName = 'kafka';
 
         $context = stream_context_create(
             [
                 'ssl' => [
                     'verify_peer' => $verifyPeer,
-                    'cafile'      => $cafile,
-                    'peer_name'   => $peerName,
+                    'cafile' => $cafile,
+                    'peer_name' => $peerName,
                 ],
             ]
         );
@@ -113,8 +172,8 @@ class SocketTest extends TestCase
         $streamMock = $this->initStreamStub('ssl', $host, $port);
 
         $streamMock->expects($this->once())
-                   ->method('context')
-                   ->with(stream_context_get_options($context));
+            ->method('context')
+            ->with(stream_context_get_options($context));
 
         $config = $this->getMockForAbstractClass(Config::class);
         $config->setSslEnable(true);
@@ -125,8 +184,8 @@ class SocketTest extends TestCase
 
         $sasl = $this->createMock(SaslMechanism::class);
         $sasl->expects($this->once())
-             ->method('authenticate')
-             ->with($this->isInstanceOf(Socket::class));
+            ->method('authenticate')
+            ->with($this->isInstanceOf(Socket::class));
 
         $socket = $this->mockStreamSocketClient($host, $port, $config, $sasl);
         $socket->connect();
@@ -134,24 +193,24 @@ class SocketTest extends TestCase
 
     public function testCreateStreamSslAuthentication(): void
     {
-        $host       = '127.0.0.1';
-        $port       = 9192;
-        $localCert  = $this->root->url() . '/localCert';
-        $localKey   = $this->root->url() . '/localKey';
+        $host = '127.0.0.1';
+        $port = 9192;
+        $localCert = $this->root->url() . '/localCert';
+        $localKey = $this->root->url() . '/localKey';
         $verifyPeer = false;
         $passphrase = '123456';
-        $cafile     = $this->root->url() . '/cafile';
-        $peerName   = 'kafka';
+        $cafile = $this->root->url() . '/cafile';
+        $peerName = 'kafka';
 
         $context = stream_context_create(
             [
                 'ssl' => [
-                    'local_cert'  => $localCert,
-                    'local_pk'    => $localKey,
+                    'local_cert' => $localCert,
+                    'local_pk' => $localKey,
                     'verify_peer' => $verifyPeer,
-                    'passphrase'  => $passphrase,
-                    'cafile'      => $cafile,
-                    'peer_name'   => $peerName,
+                    'passphrase' => $passphrase,
+                    'cafile' => $cafile,
+                    'peer_name' => $peerName,
                 ],
             ]
         );
@@ -159,8 +218,8 @@ class SocketTest extends TestCase
         $streamMock = $this->initStreamStub('ssl', $host, $port);
 
         $streamMock->expects($this->once())
-                   ->method('context')
-                   ->with(stream_context_get_options($context));
+            ->method('context')
+            ->with(stream_context_get_options($context));
 
         $config = $this->getMockForAbstractClass(Config::class);
         $config->setSslEnable(true);
@@ -174,8 +233,8 @@ class SocketTest extends TestCase
 
         $sasl = $this->createMock(SaslMechanism::class);
         $sasl->expects($this->once())
-             ->method('authenticate')
-             ->with($this->isInstanceOf(Socket::class));
+            ->method('authenticate')
+            ->with($this->isInstanceOf(Socket::class));
 
         $socket = $this->mockStreamSocketClient($host, $port, $config, $sasl);
         $socket->connect();
@@ -211,6 +270,27 @@ class SocketTest extends TestCase
 
         $socket = $this->createStream($host, $port, false);
         $socket->readBlocking(4);
+    }
+
+    /**
+     * @param int|bool $select
+     * @param mixed[] $metaData
+     *
+     * @return Socket|MockObject
+     */
+    private function createStream(string $host, int $port, $select, array $metaData = []): Socket
+    {
+        $socket = $this->mockStreamSocketClient($host, $port, null, null, ['select', 'getMetaData']);
+
+        $socket->method('select')
+            ->willReturn($select);
+
+        $socket->method('getMetaData')
+            ->willReturn($metaData);
+
+        $socket->connect();
+
+        return $socket;
     }
 
     /**
@@ -285,8 +365,8 @@ class SocketTest extends TestCase
 
         $socket = $this->mockStreamSocketClient($host, $port, null, null, ['select']);
         $socket->expects($this->exactly(2))
-               ->method('select')
-               ->willReturnOnConsecutiveCalls(1, 0);
+            ->method('select')
+            ->willReturnOnConsecutiveCalls(1, 0);
 
         $socket->connect();
         $socket->readBlocking(4);
@@ -306,8 +386,8 @@ class SocketTest extends TestCase
         $socket->setRecvTimeoutUsec(30001);
 
         $socket->method('select')
-               ->with($this->isType('array'), 3000, 30001, true)
-               ->willReturn(1);
+            ->with($this->isType('array'), 3000, 30001, true)
+            ->willReturn(1);
 
         $socket->connect();
 
@@ -340,7 +420,7 @@ class SocketTest extends TestCase
 
         $streamMock = $this->initStreamStub('tcp', $host, $port);
         $streamMock->method('eof')
-                   ->will($this->returnValue(false));
+            ->will($this->returnValue(false));
         $socket = $this->createStream($host, $port, 0, ['timed_out' => true]);
         $socket->writeBlocking('4');
     }
@@ -356,22 +436,22 @@ class SocketTest extends TestCase
 
         $streamMock = $this->initStreamStub('tcp', $host, $port);
         $streamMock->method('eof')
-                   ->will($this->returnValue(false));
+            ->will($this->returnValue(false));
         $socket = $this->createStream($host, $port, 0, []);
         $socket->writeBlocking('xxxx');
     }
 
     public function testWriteBlockingMaxBuffer(): void
     {
-        $str  = str_pad('', Socket::MAX_WRITE_BUFFER * 2, '*');
+        $str = str_pad('', Socket::MAX_WRITE_BUFFER * 2, '*');
         $host = '127.0.0.1';
         $port = 9192;
 
         $streamMock = $this->initStreamStub('tcp', $host, $port);
 
         $streamMock->method('write')
-                   ->withConsecutive([substr($str, 0, Socket::MAX_WRITE_BUFFER)], [substr($str, Socket::MAX_WRITE_BUFFER)])
-                   ->willReturnOnConsecutiveCalls(Socket::MAX_WRITE_BUFFER, Socket::MAX_WRITE_BUFFER);
+            ->withConsecutive([substr($str, 0, Socket::MAX_WRITE_BUFFER)], [substr($str, Socket::MAX_WRITE_BUFFER)])
+            ->willReturnOnConsecutiveCalls(Socket::MAX_WRITE_BUFFER, Socket::MAX_WRITE_BUFFER);
 
         $socket = $this->createStream($host, $port, 1);
         $this->assertEquals(Socket::MAX_WRITE_BUFFER * 2, $socket->writeBlocking($str));
@@ -385,15 +465,15 @@ class SocketTest extends TestCase
      */
     public function testWriteBlockingReturnFalse(): void
     {
-        $str  = str_pad('', Socket::MAX_WRITE_BUFFER * 2, '*');
+        $str = str_pad('', Socket::MAX_WRITE_BUFFER * 2, '*');
         $host = '127.0.0.1';
         $port = 9192;
 
         $streamMock = $this->initStreamStub('tcp', $host, $port);
 
         $streamMock->method('write')
-                   ->withConsecutive([substr($str, 0, Socket::MAX_WRITE_BUFFER)])
-                   ->willReturnOnConsecutiveCalls(0);
+            ->withConsecutive([substr($str, 0, Socket::MAX_WRITE_BUFFER)])
+            ->willReturnOnConsecutiveCalls(0);
 
         $socket = $this->createStream($host, $port, 1);
         $socket->writeBlocking($str);
@@ -413,90 +493,11 @@ class SocketTest extends TestCase
         $socket->setSendTimeoutUsec(30001);
 
         $socket->method('select')
-               ->with($this->isType('array'), 3000, 30001, false)
-               ->willReturn(1);
+            ->with($this->isType('array'), 3000, 30001, false)
+            ->willReturn(1);
 
         $socket->connect();
 
         $this->assertEquals(4, $socket->writeBlocking('xxxx'));
-    }
-
-    /**
-     * @param string[] $mockMethod
-     *
-     * @return Socket|MockObject
-     */
-    private function mockStreamSocketClient(
-        string $host,
-        int $port,
-        ?Config $config = null,
-        ?SaslMechanism $sasl = null,
-        array $mockMethod = []
-    ): Socket {
-        $socket = $this->getMockBuilder(Socket::class)
-                       ->setMethods(array_merge(['createSocket'], $mockMethod))
-                       ->setConstructorArgs([$host, $port, $config, $sasl])
-                       ->getMock();
-
-        $socket->method('createSocket')
-            ->willReturnCallback(
-                function (string $remoteSocket, $context, ?int &$errno, ?string &$errstr) {
-                    $errno  = 99;
-                    $errstr = 'my custom error';
-
-                    return @fopen($remoteSocket, 'r+', false, $context);
-                }
-            );
-
-        return $socket;
-    }
-
-    /**
-     * @return Stream|MockObject
-     */
-    private function initStreamStub(string $transport, string $host, int $port, bool $success = true): Stream
-    {
-        $uri = sprintf('%s://%s:%s', $transport, $host, $port);
-        stream_wrapper_register($transport, SimpleStream::class);
-
-        $streamMock = $this->createMock(Stream::class);
-        $streamMock->method('open')->with($uri, 'r+', 0)->willReturn($success);
-        $streamMock->method('option')->willReturn(true);
-
-        SimpleStream::setMock($streamMock);
-
-        return $streamMock;
-    }
-
-    /**
-     * @param int|bool $select
-     * @param mixed[]  $metaData
-     *
-     * @return Socket|MockObject
-     */
-    private function createStream(string $host, int $port, $select, array $metaData = []): Socket
-    {
-        $socket = $this->mockStreamSocketClient($host, $port, null, null, ['select', 'getMetaData']);
-
-        $socket->method('select')
-               ->willReturn($select);
-
-        $socket->method('getMetaData')
-               ->willReturn($metaData);
-
-        $socket->connect();
-
-        return $socket;
-    }
-
-    private function clearStreamMock(): void
-    {
-        if (in_array('ssl', stream_get_wrappers(), true)) {
-            stream_wrapper_unregister('ssl');
-        }
-
-        if (in_array('tcp', stream_get_wrappers(), true)) {
-            stream_wrapper_unregister('tcp');
-        }
     }
 }

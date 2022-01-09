@@ -46,13 +46,13 @@ use function version_compare;
  */
 abstract class Config
 {
-    public const SECURITY_PROTOCOL_PLAINTEXT      = 'PLAINTEXT';
-    public const SECURITY_PROTOCOL_SSL            = 'SSL';
+    public const SECURITY_PROTOCOL_PLAINTEXT = 'PLAINTEXT';
+    public const SECURITY_PROTOCOL_SSL = 'SSL';
     public const SECURITY_PROTOCOL_SASL_PLAINTEXT = 'SASL_PLAINTEXT';
-    public const SECURITY_PROTOCOL_SASL_SSL       = 'SASL_SSL';
+    public const SECURITY_PROTOCOL_SASL_SSL = 'SASL_SSL';
 
-    public const SASL_MECHANISMS_PLAIN         = 'PLAIN';
-    public const SASL_MECHANISMS_GSSAPI        = 'GSSAPI';
+    public const SASL_MECHANISMS_PLAIN = 'PLAIN';
+    public const SASL_MECHANISMS_GSSAPI = 'GSSAPI';
     public const SASL_MECHANISMS_SCRAM_SHA_256 = 'SCRAM_SHA_256';
     public const SASL_MECHANISMS_SCRAM_SHA_512 = 'SCRAM_SHA_512';
 
@@ -79,27 +79,27 @@ abstract class Config
      * @var mixed[]
      */
     private static $defaults = [
-        'clientId'                  => 'kafka-php',
-        'brokerVersion'             => '0.10.1.0',
-        'metadataBrokerList'        => '',
-        'messageMaxBytes'           => 1000000,
-        'metadataRequestTimeoutMs'  => 60000,
+        'clientId' => 'kafka-php',
+        'brokerVersion' => '0.10.1.0',
+        'metadataBrokerList' => '',
+        'messageMaxBytes' => 1000000,
+        'metadataRequestTimeoutMs' => 60000,
         'metadataRefreshIntervalMs' => 300000,
-        'metadataMaxAgeMs'          => -1,
-        'securityProtocol'          => self::SECURITY_PROTOCOL_PLAINTEXT,
-        'sslEnable'                 => false, // this config item will override, don't config it.
-        'sslEnableAuthentication'   => true,
-        'sslLocalCert'              => false,
-        'sslLocalPk'                => false,
-        'sslVerifyPeer'             => false,
-        'sslPassphrase'             => false,
-        'sslCafile'                 => '',
-        'sslPeerName'               => '',
-        'saslMechanism'             => self::SASL_MECHANISMS_PLAIN,
-        'saslUsername'              => '',
-        'saslPassword'              => '',
-        'saslKeytab'                => '',
-        'saslPrincipal'             => '',
+        'metadataMaxAgeMs' => -1,
+        'securityProtocol' => self::SECURITY_PROTOCOL_PLAINTEXT,
+        'sslEnable' => false, // this config item will override, don't config it.
+        'sslEnableAuthentication' => true,
+        'sslLocalCert' => false,
+        'sslLocalPk' => false,
+        'sslVerifyPeer' => false,
+        'sslPassphrase' => false,
+        'sslCafile' => '',
+        'sslPeerName' => '',
+        'saslMechanism' => self::SASL_MECHANISMS_PLAIN,
+        'saslUsername' => '',
+        'saslPassword' => '',
+        'saslKeytab' => '',
+        'saslPrincipal' => '',
     ];
 
     /**
@@ -112,7 +112,7 @@ abstract class Config
         $isGetter = strpos($name, 'get') === 0 || strpos($name, 'iet') === 0;
         $isSetter = strpos($name, 'set') === 0;
 
-        if (! $isGetter && ! $isSetter) {
+        if (!$isGetter && !$isSetter) {
             return false;
         }
 
@@ -249,7 +249,7 @@ abstract class Config
      */
     public function setSslLocalCert(string $localCert): void
     {
-        if (! is_file($localCert)) {
+        if (!is_file($localCert)) {
             throw new Exception\Config('Set ssl local cert file is invalid');
         }
 
@@ -261,7 +261,7 @@ abstract class Config
      */
     public function setSslLocalPk(string $localPk): void
     {
-        if (! is_file($localPk)) {
+        if (!is_file($localPk)) {
             throw new Exception\Config('Set ssl local private key file is invalid');
         }
 
@@ -273,7 +273,7 @@ abstract class Config
      */
     public function setSslCafile(string $cafile): void
     {
-        if (! is_file($cafile)) {
+        if (!is_file($cafile)) {
             throw new Exception\Config('Set ssl ca file is invalid');
         }
 
@@ -285,7 +285,7 @@ abstract class Config
      */
     public function setSaslKeytab(string $keytab): void
     {
-        if (! is_file($keytab)) {
+        if (!is_file($keytab)) {
             throw new Exception\Config('Set sasl gssapi keytab file is invalid');
         }
 
@@ -297,7 +297,7 @@ abstract class Config
      */
     public function setSecurityProtocol(string $protocol): void
     {
-        if (! in_array($protocol, self::ALLOW_SECURITY_PROTOCOLS, true)) {
+        if (!in_array($protocol, self::ALLOW_SECURITY_PROTOCOLS, true)) {
             throw new Exception\Config('Invalid security protocol given.');
         }
 
@@ -309,7 +309,7 @@ abstract class Config
      */
     public function setSaslMechanism(string $mechanism): void
     {
-        if (! in_array($mechanism, self::ALLOW_MECHANISMS, true)) {
+        if (!in_array($mechanism, self::ALLOW_MECHANISMS, true)) {
             throw new Exception\Config('Invalid security sasl mechanism given.');
         }
 

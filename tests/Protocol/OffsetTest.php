@@ -23,7 +23,7 @@ final class OffsetTest extends TestCase
 
     public function setUp(): void
     {
-        $this->offset   = new Offset('0.9.0.1');
+        $this->offset = new Offset('0.9.0.1');
         $this->offset10 = new Offset('0.10.1.0');
     }
 
@@ -36,7 +36,7 @@ final class OffsetTest extends TestCase
                     'partitions' => [
                         [
                             'partition_id' => 0,
-                            'offset'       => 100,
+                            'offset' => 100,
                         ],
                     ],
                 ],
@@ -115,7 +115,7 @@ final class OffsetTest extends TestCase
      */
     public function testDecode(): void
     {
-        $data     = '000000010004746573740000000100000000000000000001000000000000002a';
+        $data = '000000010004746573740000000100000000000000000001000000000000002a';
         $expected = '[{"topicName":"test","partitions":[{"partition":0,"errorCode":0,"timestamp":0,"offsets":[42]}]}]';
 
         $test = $this->offset->decode(hex2bin($data));

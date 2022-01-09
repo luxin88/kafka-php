@@ -15,14 +15,14 @@ class State
     use SingletonTrait;
 
     public const REQUEST_METADATA = 1;
-    public const REQUEST_PRODUCE  = 2;
+    public const REQUEST_PRODUCE = 2;
 
-    public const STATUS_INIT    = 0;
-    public const STATUS_STOP    = 1;
-    public const STATUS_START   = 2;
-    public const STATUS_LOOP    = 4;
+    public const STATUS_INIT = 0;
+    public const STATUS_STOP = 1;
+    public const STATUS_START = 2;
+    public const STATUS_LOOP = 4;
     public const STATUS_PROCESS = 8;
-    public const STATUS_FINISH  = 16;
+    public const STATUS_FINISH = 16;
 
     /**
      * @var mixed[]
@@ -41,7 +41,7 @@ class State
     {
         $this->callStatus = [
             self::REQUEST_METADATA => ['status' => self::STATUS_LOOP],
-            self::REQUEST_PRODUCE  => ['status' => self::STATUS_LOOP],
+            self::REQUEST_PRODUCE => ['status' => self::STATUS_LOOP],
         ];
 
         $config = $this->getConfig();
@@ -58,12 +58,17 @@ class State
         }
     }
 
+    private function getConfig(): ProducerConfig
+    {
+        return ProducerConfig::getInstance();
+    }
+
     public function start(): void
     {
         foreach ($this->requests as $request => $option) {
             $interval = $option['interval'] ?? 200;
 
-            Loop::repeat((int) $interval, function (string $watcherId) use ($request, $option): void {
+            Loop::repeat((int)$interval, function (string $watcherId) use ($request, $option): void {
                 if ($this->checkRun($request) && $option['func'] !== null) {
                     $this->processing($request, $option['func']());
                 }
@@ -80,90 +85,9 @@ class State
         }
     }
 
-    /**
-     * @param mixed|null $context
-     */
-    public function succRun(int $key, $context = null): void
-    {
-        $config = $this->getConfig();
-        $isAsyn = $config->getIsAsyn();
-
-        if (! isset($this->callStatus[$key])) {
-            return;
-        }
-
-        switch ($key) {
-            case self::REQUEST_METADATA:
-                $this->callStatus[$key]['status'] = (self::STATUS_LOOP | self::STATUS_FINISH);
-
-                if ($context !== null) { // if kafka broker is change
-                    $this->recover();
-                }
-                break;
-            case self::REQUEST_PRODUCE:
-                if ($context === null) {
-                    if (! $isAsyn) {
-                        $this->callStatus[$key]['status'] = self::STATUS_FINISH;
-                        Loop::stop();
-                    } else {
-                        $this->callStatus[$key]['status'] = (self::STATUS_LOOP | self::STATUS_FINISH);
-                    }
-                    break;
-                }
-                unset($this->callStatus[$key]['context'][$context]);
-                $contextStatus = $this->callStatus[$key]['context'];
-
-                if (empty($contextStatus)) {
-                    if (! $isAsyn) {
-                        $this->callStatus[$key]['status'] = self::STATUS_FINISH;
-                        Loop::stop();
-                    } else {
-                        $this->callStatus[$key]['status'] = (self::STATUS_LOOP | self::STATUS_FINISH);
-                    }
-                }
-                break;
-        }
-    }
-
-    public function failRun(int $key): void
-    {
-        if (! isset($this->callStatus[$key])) {
-            return;
-        }
-
-        switch ($key) {
-            case self::REQUEST_METADATA:
-                $this->callStatus[$key]['status'] = self::STATUS_LOOP;
-                break;
-            case self::REQUEST_PRODUCE:
-                $this->recover();
-                break;
-        }
-    }
-
-    /**
-     * @param callable[] $callbacks
-     */
-    public function setCallback(array $callbacks): void
-    {
-        foreach ($callbacks as $request => $callback) {
-            $this->requests[$request]['func'] = $callback;
-        }
-    }
-
-    public function recover(): void
-    {
-        $this->callStatus = [
-            self::REQUEST_METADATA => $this->callStatus[self::REQUEST_METADATA],
-            self::REQUEST_PRODUCE => [
-                'status'=> self::STATUS_LOOP,
-            ],
-        ];
-    }
-
     protected function checkRun(int $key): bool
     {
-        if (! isset($this->callStatus[$key])) {
+        if (!isset($this->callStatus[$key])) {
             return false;
         }
 
@@ -206,7 +130,7 @@ class State
      */
     protected function processing(int $key, $context): void
     {
-        if (! isset($this->callStatus[$key])) {
+        if (!isset($this->callStatus[$key])) {
             return;
         }
 
@@ -237,8 +161,84 @@ class State
         }
     }
 
-    private function getConfig(): ProducerConfig
+    /**
+     * @param mixed|null $context
+     */
+    public function succRun(int $key, $context = null): void
     {
-        return ProducerConfig::getInstance();
+        $config = $this->getConfig();
+        $isAsyn = $config->getIsAsyn();
+
+        if (!isset($this->callStatus[$key])) {
+            return;
+        }
+
+        switch ($key) {
+            case self::REQUEST_METADATA:
+                $this->callStatus[$key]['status'] = (self::STATUS_LOOP | self::STATUS_FINISH);
+
+                if ($context !== null) { // if kafka broker is change
+                    $this->recover();
+                }
+                break;
+            case self::REQUEST_PRODUCE:
+                if ($context === null) {
+                    if (!$isAsyn) {
+                        $this->callStatus[$key]['status'] = self::STATUS_FINISH;
+                        Loop::stop();
+                    } else {
+                        $this->callStatus[$key]['status'] = (self::STATUS_LOOP | self::STATUS_FINISH);
+                    }
+                    break;
+                }
+                unset($this->callStatus[$key]['context'][$context]);
+                $contextStatus = $this->callStatus[$key]['context'];
+
+                if (empty($contextStatus)) {
+                    if (!$isAsyn) {
+                        $this->callStatus[$key]['status'] = self::STATUS_FINISH;
+                        Loop::stop();
+                    } else {
+                        $this->callStatus[$key]['status'] = (self::STATUS_LOOP | self::STATUS_FINISH);
+                    }
+                }
+                break;
+        }
+    }
+
+    public function recover(): void
+    {
+        $this->callStatus = [
+            self::REQUEST_METADATA => $this->callStatus[self::REQUEST_METADATA],
+            self::REQUEST_PRODUCE => [
+                'status' => self::STATUS_LOOP,
+            ],
+        ];
+    }
+
+    public function failRun(int $key): void
+    {
+        if (!isset($this->callStatus[$key])) {
+            return;
+        }
+
+        switch ($key) {
+            case self::REQUEST_METADATA:
+                $this->callStatus[$key]['status'] = self::STATUS_LOOP;
+                break;
+            case self::REQUEST_PRODUCE:
+                $this->recover();
+                break;
+        }
+    }
+
+    /**
+     * @param callable[] $callbacks
+     */
+    public function setCallback(array $callbacks): void
+    {
+        foreach ($callbacks as $request => $callback) {
+            $this->requests[$request]['func'] = $callback;
+        }
     }
 }

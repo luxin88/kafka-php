@@ -30,15 +30,16 @@ abstract class Mechanism implements SaslMechanism
         $socket->writeBlocking($requestData);
         $dataLen = ProtocolTool::unpack(\Kafka\Protocol\Protocol::BIT_B32, $socket->readBlocking(4));
 
-        $data          = $socket->readBlocking($dataLen);
+        $data = $socket->readBlocking($dataLen);
         $correlationId = ProtocolTool::unpack(\Kafka\Protocol\Protocol::BIT_B32, substr($data, 0, 4));
-        $result        = Protocol::decode(Protocol::SASL_HAND_SHAKE_REQUEST, substr($data, 4));
+        $result = Protocol::decode(Protocol::SASL_HAND_SHAKE_REQUEST, substr($data, 4));
 
         if ($result['errorCode'] !== Protocol::NO_ERROR) {
             throw new Exception(Protocol::getError($result['errorCode']));
         }
     }
 
-    abstract protected function performAuthentication(CommonSocket $socket): void;
     abstract public function getName(): string;
+
+    abstract protected function performAuthentication(CommonSocket $socket): void;
 }

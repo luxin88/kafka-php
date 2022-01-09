@@ -1,5 +1,3 @@
-<?php
-
     init
     REQUEST_METADATA =>  STATUS_LOOP 
     REQUEST_GETGROUP =>  STATUS_START

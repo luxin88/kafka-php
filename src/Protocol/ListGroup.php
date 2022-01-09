@@ -25,14 +25,14 @@ class ListGroup extends Protocol
      */
     public function decode(string $data): array
     {
-        $offset    = 0;
+        $offset = 0;
         $errorCode = self::unpack(self::BIT_B16_SIGNED, substr($data, $offset, 2));
-        $offset   += 2;
-        $groups    = $this->decodeArray(substr($data, $offset), [$this, 'decodeGroup']);
+        $offset += 2;
+        $groups = $this->decodeArray(substr($data, $offset), [$this, 'decodeGroup']);
 
         return [
             'errorCode' => $errorCode,
-            'groups'    => $groups['data'],
+            'groups' => $groups['data'],
         ];
     }
 
@@ -41,16 +41,16 @@ class ListGroup extends Protocol
      */
     protected function decodeGroup(string $data): array
     {
-        $offset       = 0;
-        $groupId      = $this->decodeString(substr($data, $offset), self::BIT_B16);
-        $offset      += $groupId['length'];
+        $offset = 0;
+        $groupId = $this->decodeString(substr($data, $offset), self::BIT_B16);
+        $offset += $groupId['length'];
         $protocolType = $this->decodeString(substr($data, $offset), self::BIT_B16);
-        $offset      += $protocolType['length'];
+        $offset += $protocolType['length'];
 
         return [
             'length' => $offset,
-            'data'   => [
-                'groupId'      => $groupId['data'],
+            'data' => [
+                'groupId' => $groupId['data'],
                 'protocolType' => $protocolType['data'],
             ],
         ];

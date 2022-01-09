@@ -16,20 +16,6 @@ final class ConsumerTest extends TestCase
     private $consumer;
 
     /**
-     * @before
-     */
-    public function createConsumer(?Consumer\StopStrategy $stopStrategy = null): void
-    {
-        $this->consumer = $this->getMockBuilder(Consumer::class)
-                               ->disableOriginalClone()
-                               ->disableArgumentCloning()
-                               ->disallowMockingUnknownTypes()
-                               ->setConstructorArgs([$stopStrategy])
-                               ->setMethods(['createProcess', 'error'])
-                               ->getMock();
-    }
-
-    /**
      * @test
      */
     public function startShouldRunTheProcessForeverWhenNoStopStrategyWasConfigured(): void
@@ -45,13 +31,29 @@ final class ConsumerTest extends TestCase
         };
 
         $this->consumer->expects($this->once())
-                       ->method('createProcess')
-                       ->with($callback)
-                       ->willReturn($this->createProcess($startCallback));
+            ->method('createProcess')
+            ->with($callback)
+            ->willReturn($this->createProcess($startCallback));
 
         $this->consumer->start($callback);
 
         self::assertTrue($executed);
+    }
+
+    private function createProcess(callable $startCallback, bool $expectsStop = false): Consumer\Process
+    {
+        $process = $this->createMock(Consumer\Process::class);
+
+        $process->method('start')->willReturnCallback(
+            function () use ($startCallback): void {
+                Loop::defer($startCallback);
+            }
+        );
+
+        $process->expects($expectsStop ? $this->once() : $this->never())
+            ->method('stop');
+
+        return $process;
     }
 
     /**
@@ -68,13 +70,13 @@ final class ConsumerTest extends TestCase
         };
 
         $this->consumer->expects($this->once())
-                       ->method('error')
-                       ->with('Consumer is already being executed');
+            ->method('error')
+            ->with('Consumer is already being executed');
 
         $this->consumer->expects($this->once())
-                       ->method('createProcess')
-                       ->with($callback)
-                       ->willReturn($this->createProcess($startCallback));
+            ->method('createProcess')
+            ->with($callback)
+            ->willReturn($this->createProcess($startCallback));
 
         $this->consumer->start($callback);
     }
@@ -102,13 +104,27 @@ final class ConsumerTest extends TestCase
         );
 
         $this->consumer->expects($this->once())
-                       ->method('createProcess')
-                       ->with($callback)
-                       ->willReturn($this->createProcess($startCallback, true));
+            ->method('createProcess')
+            ->with($callback)
+            ->willReturn($this->createProcess($startCallback, true));
 
         $this->consumer->start($callback);
 
         self::assertTrue($executed);
+    }
+
+    /**
+     * @before
+     */
+    public function createConsumer(?Consumer\StopStrategy $stopStrategy = null): void
+    {
+        $this->consumer = $this->getMockBuilder(Consumer::class)
+            ->disableOriginalClone()
+            ->disableArgumentCloning()
+            ->disallowMockingUnknownTypes()
+            ->setConstructorArgs([$stopStrategy])
+            ->setMethods(['createProcess', 'error'])
+            ->getMock();
     }
 
     /**
@@ -124,9 +140,9 @@ final class ConsumerTest extends TestCase
         };
 
         $this->consumer->expects($this->once())
-                       ->method('createProcess')
-                       ->with($callback)
-                       ->willReturn($this->createProcess($startCallback, true));
+            ->method('createProcess')
+            ->with($callback)
+            ->willReturn($this->createProcess($startCallback, true));
 
         $this->consumer->start($callback);
     }
@@ -137,25 +153,9 @@ final class ConsumerTest extends TestCase
     public function stopShouldLogErrorWhenConsumerIsNotRunning(): void
     {
         $this->consumer->expects($this->once())
-                       ->method('error')
-                       ->with('Consumer is not running');
+            ->method('error')
+            ->with('Consumer is not running');
 
         $this->consumer->stop();
-    }
-
-    private function createProcess(callable $startCallback, bool $expectsStop = false): Consumer\Process
-    {
-        $process = $this->createMock(Consumer\Process::class);
-
-        $process->method('start')->willReturnCallback(
-            function () use ($startCallback): void {
-                Loop::defer($startCallback);
-            }
-        );
-
-        $process->expects($expectsStop ? $this->once() : $this->never())
-                ->method('stop');
-
-        return $process;
     }
 }

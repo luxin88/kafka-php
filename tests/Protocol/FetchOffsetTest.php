@@ -34,7 +34,7 @@ final class FetchOffsetTest extends TestCase
         ];
 
         $expected = '0000002b000900010000000900096b61666b612d706870000474657374000000010004746573740000000100000000';
-        $test     = $this->offset->encode($data);
+        $test = $this->offset->encode($data);
 
         self::assertSame($expected, bin2hex($test));
     }
@@ -100,7 +100,7 @@ final class FetchOffsetTest extends TestCase
      */
     public function testDecode(): void
     {
-        $data     = '000000010004746573740000000100000000ffffffffffffffff00000000';
+        $data = '000000010004746573740000000100000000ffffffffffffffff00000000';
         $expected = '[{"topicName":"test","partitions":[{"partition":0,"errorCode":0,"metadata":"","offset":-1}]}]';
 
         $test = $this->offset->decode(hex2bin($data));

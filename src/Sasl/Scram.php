@@ -74,13 +74,30 @@ class Scram extends Mechanism
      */
     public function __construct(string $username, string $password, int $algorithm)
     {
-        if (! isset(self::ALLOW_SHA_ALGORITHM[$algorithm])) {
+        if (!isset(self::ALLOW_SHA_ALGORITHM[$algorithm])) {
             throw new Exception('Invalid hash algorithm given, it must be one of: [SCRAM_SHA_256, SCRAM_SHA_512].');
         }
 
         $this->hashAlgorithm = $algorithm;
-        $this->username      = $this->formatName(trim($username));
-        $this->password      = trim($password);
+        $this->username = $this->formatName(trim($username));
+        $this->password = trim($password);
+    }
+
+    /**
+     * Prepare a name for inclusion in a SCRAM response.
+     * @See RFC-4013.
+     *
+     * @param string $user a name to be prepared.
+     * @return string the reformatted name.
+     */
+    private function formatName(string $user): string
+    {
+        return str_replace(['=', ','], ['=3D', '=2C'], $user);
+    }
+
+    public function getName(): string
+    {
+        return self::MECHANISM_NAME . $this->hashAlgorithm;
     }
 
     /**
@@ -90,26 +107,20 @@ class Scram extends Mechanism
     protected function performAuthentication(CommonSocket $socket): void
     {
         $firstMessage = $this->firstMessage();
-        $data         = ProtocolTool::encodeString($firstMessage, ProtocolTool::PACK_INT32);
+        $data = ProtocolTool::encodeString($firstMessage, ProtocolTool::PACK_INT32);
         $socket->writeBlocking($data);
-        $dataLen           = ProtocolTool::unpack(ProtocolTool::BIT_B32, $socket->readBlocking(4));
+        $dataLen = ProtocolTool::unpack(ProtocolTool::BIT_B32, $socket->readBlocking(4));
         $serverFistMessage = $socket->readBlocking($dataLen);
 
         $finalMessage = $this->finalMessage($serverFistMessage);
-        $data         = ProtocolTool::encodeString($finalMessage, ProtocolTool::PACK_INT32);
+        $data = ProtocolTool::encodeString($finalMessage, ProtocolTool::PACK_INT32);
         $socket->writeBlocking($data);
-        $dataLen       = ProtocolTool::unpack(ProtocolTool::BIT_B32, $socket->readBlocking(4));
+        $dataLen = ProtocolTool::unpack(ProtocolTool::BIT_B32, $socket->readBlocking(4));
         $verifyMessage = $socket->readBlocking($dataLen);
 
-        if (! $this->verifyMessage($verifyMessage)) {
+        if (!$this->verifyMessage($verifyMessage)) {
             throw new Exception('Verify server final response message is failure');
         }
-    }
-
-
-    public function getName(): string
-    {
-        return self::MECHANISM_NAME . $this->hashAlgorithm;
     }
 
     /**
@@ -118,11 +129,25 @@ class Scram extends Mechanism
     protected function firstMessage(): string
     {
         $this->cnonce = $this->generateNonce();
-        $message      = sprintf('n,,n=%s,r=%s', $this->username, $this->cnonce);
+        $message = sprintf('n,,n=%s,r=%s', $this->username, $this->cnonce);
 
         $this->firstMessageBare = substr($message, 3);
 
         return $message;
+    }
+
+    /**
+     * @throws \Exception
+     */
+    protected function generateNonce(): string
+    {
+        $str = '';
+
+        for ($i = 0; $i < 32; $i++) {
+            $str .= chr(random_int(0, 255));
+        }
+
+        return base64_encode($str);
     }
 
     /**
@@ -137,13 +162,13 @@ class Scram extends Mechanism
         }
 
         $nonce = substr($challengeArray[0], 2);
-        $salt  = base64_decode(substr($challengeArray[1], 2));
+        $salt = base64_decode(substr($challengeArray[1], 2));
 
-        if (! $salt) {
+        if (!$salt) {
             throw new Exception('Server response challenge is invalid, paser salt is failure.');
         }
 
-        $i      = (int) substr($challengeArray[2], 2);
+        $i = (int)substr($challengeArray[2], 2);
         $cnonce = substr($nonce, 0, strlen($this->cnonce));
 
         if ($cnonce !== $this->cnonce) {
@@ -167,18 +192,45 @@ class Scram extends Mechanism
          * ServerSignature := HMAC(ServerKey, AuthMessage)
          */
 
-        $saltedPassword       = $this->hi($this->password, $salt, $i);
+        $saltedPassword = $this->hi($this->password, $salt, $i);
         $this->saltedPassword = $saltedPassword;
-        $clientKey            = $this->hmac($saltedPassword, 'Client Key', true);
-        $storedKey            = $this->hash($clientKey);
-        $authMessage          = $this->firstMessageBare . ',' . $challenge . ',' . $finalMessage;
-        $this->authMessage    = $authMessage;
+        $clientKey = $this->hmac($saltedPassword, 'Client Key', true);
+        $storedKey = $this->hash($clientKey);
+        $authMessage = $this->firstMessageBare . ',' . $challenge . ',' . $finalMessage;
+        $this->authMessage = $authMessage;
 
         $clientSignature = $this->hmac($storedKey, $authMessage, true);
-        $clientProof     = $clientKey ^ $clientSignature;
-        $proof           = ',p=' . base64_encode($clientProof);
+        $clientProof = $clientKey ^ $clientSignature;
+        $proof = ',p=' . base64_encode($clientProof);
 
         return $finalMessage . $proof;
+    }
+
+    /**
+     * Hi() call, which is essentially PBKDF2 (RFC-2898) with HMAC-H() as the pseudorandom function.
+     */
+    private function hi(string $str, string $salt, int $icnt): string
+    {
+        $int1 = "\0\0\0\1";
+        $ui = $this->hmac($str, $salt . $int1, true);
+        $result = $ui;
+
+        for ($k = 1; $k < $icnt; $k++) {
+            $ui = $this->hmac($str, $ui, true);
+            $result = $result ^ $ui;
+        }
+
+        return $result;
+    }
+
+    private function hmac(string $key, string $data, bool $raw): string
+    {
+        return hash_hmac(self::ALLOW_SHA_ALGORITHM[$this->hashAlgorithm], $data, $key, $raw);
+    }
+
+    private function hash(string $data): string
+    {
+        return hash(self::ALLOW_SHA_ALGORITHM[$this->hashAlgorithm], $data, true);
     }
 
     /**
@@ -196,66 +248,13 @@ class Scram extends Mechanism
             return false;
         }
 
-        if (! preg_match($verifierRegexp, $data, $matches)) {
+        if (!preg_match($verifierRegexp, $data, $matches)) {
             return false;
         }
 
         $proposedServerSignature = base64_decode($matches[1]);
-        $serverKey               = $this->hmac($this->saltedPassword, 'Server Key', true);
-        $serverSignature         = $this->hmac($serverKey, $this->authMessage, true);
+        $serverKey = $this->hmac($this->saltedPassword, 'Server Key', true);
+        $serverSignature = $this->hmac($serverKey, $this->authMessage, true);
         return hash_equals($proposedServerSignature, $serverSignature);
-    }
-
-    /**
-     * @throws \Exception
-     */
-    protected function generateNonce(): string
-    {
-        $str = '';
-
-        for ($i = 0; $i < 32; $i++) {
-            $str .= chr(random_int(0, 255));
-        }
-
-        return base64_encode($str);
-    }
-
-    private function hash(string $data): string
-    {
-        return hash(self::ALLOW_SHA_ALGORITHM[$this->hashAlgorithm], $data, true);
-    }
-
-    private function hmac(string $key, string $data, bool $raw): string
-    {
-        return hash_hmac(self::ALLOW_SHA_ALGORITHM[$this->hashAlgorithm], $data, $key, $raw);
-    }
-
-    /**
-     * Prepare a name for inclusion in a SCRAM response.
-     * @See RFC-4013.
-     *
-     * @param string $user a name to be prepared.
-     * @return string the reformatted name.
-     */
-    private function formatName(string $user): string
-    {
-        return str_replace(['=', ','], ['=3D', '=2C'], $user);
-    }
-
-    /**
-     * Hi() call, which is essentially PBKDF2 (RFC-2898) with HMAC-H() as the pseudorandom function.
-     */
-    private function hi(string $str, string $salt, int $icnt): string
-    {
-        $int1   = "\0\0\0\1";
-        $ui     = $this->hmac($str, $salt . $int1, true);
-        $result = $ui;
-
-        for ($k = 1; $k < $icnt; $k++) {
-            $ui     = $this->hmac($str, $ui, true);
-            $result = $result ^ $ui;
-        }
-
-        return $result;
     }
 }

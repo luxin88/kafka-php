@@ -13,32 +13,32 @@ class State
 {
     use SingletonTrait;
 
-    public const REQUEST_METADATA      = 1;
-    public const REQUEST_GETGROUP      = 2;
-    public const REQUEST_JOINGROUP     = 3;
-    public const REQUEST_SYNCGROUP     = 4;
-    public const REQUEST_HEARTGROUP    = 5;
-    public const REQUEST_OFFSET        = 6;
-    public const REQUEST_FETCH         = 7;
-    public const REQUEST_FETCH_OFFSET  = 8;
+    public const REQUEST_METADATA = 1;
+    public const REQUEST_GETGROUP = 2;
+    public const REQUEST_JOINGROUP = 3;
+    public const REQUEST_SYNCGROUP = 4;
+    public const REQUEST_HEARTGROUP = 5;
+    public const REQUEST_OFFSET = 6;
+    public const REQUEST_FETCH = 7;
+    public const REQUEST_FETCH_OFFSET = 8;
     public const REQUEST_COMMIT_OFFSET = 9;
 
-    public const STATUS_INIT    = 0;
-    public const STATUS_STOP    = 1;
-    public const STATUS_START   = 2;
-    public const STATUS_LOOP    = 4;
+    public const STATUS_INIT = 0;
+    public const STATUS_STOP = 1;
+    public const STATUS_START = 2;
+    public const STATUS_LOOP = 4;
     public const STATUS_PROCESS = 8;
-    public const STATUS_FINISH  = 16;
+    public const STATUS_FINISH = 16;
 
     private const CLEAN_REQUEST_STATE = [
-        self::REQUEST_METADATA      => [],
-        self::REQUEST_GETGROUP      => [],
-        self::REQUEST_JOINGROUP     => [],
-        self::REQUEST_SYNCGROUP     => [],
-        self::REQUEST_HEARTGROUP    => [],
-        self::REQUEST_OFFSET        => ['interval' => 2000],
-        self::REQUEST_FETCH         => ['interval' => 100],
-        self::REQUEST_FETCH_OFFSET  => ['interval' => 2000],
+        self::REQUEST_METADATA => [],
+        self::REQUEST_GETGROUP => [],
+        self::REQUEST_JOINGROUP => [],
+        self::REQUEST_SYNCGROUP => [],
+        self::REQUEST_HEARTGROUP => [],
+        self::REQUEST_OFFSET => ['interval' => 2000],
+        self::REQUEST_FETCH => ['interval' => 100],
+        self::REQUEST_FETCH_OFFSET => ['interval' => 2000],
         self::REQUEST_COMMIT_OFFSET => ['norepeat' => true],
     ];
 
@@ -55,14 +55,14 @@ class State
     public function init(): void
     {
         $this->callStatus = [
-            self::REQUEST_METADATA      => ['status' => self::STATUS_LOOP],
-            self::REQUEST_GETGROUP      => ['status' => self::STATUS_START],
-            self::REQUEST_JOINGROUP     => ['status' => self::STATUS_START],
-            self::REQUEST_SYNCGROUP     => ['status' => self::STATUS_START],
-            self::REQUEST_HEARTGROUP    => ['status' => self::STATUS_LOOP],
-            self::REQUEST_OFFSET        => ['status' => self::STATUS_LOOP],
-            self::REQUEST_FETCH         => ['status' => self::STATUS_LOOP],
-            self::REQUEST_FETCH_OFFSET  => ['status' => self::STATUS_LOOP],
+            self::REQUEST_METADATA => ['status' => self::STATUS_LOOP],
+            self::REQUEST_GETGROUP => ['status' => self::STATUS_START],
+            self::REQUEST_JOINGROUP => ['status' => self::STATUS_START],
+            self::REQUEST_SYNCGROUP => ['status' => self::STATUS_START],
+            self::REQUEST_HEARTGROUP => ['status' => self::STATUS_LOOP],
+            self::REQUEST_OFFSET => ['status' => self::STATUS_LOOP],
+            self::REQUEST_FETCH => ['status' => self::STATUS_LOOP],
+            self::REQUEST_FETCH_OFFSET => ['status' => self::STATUS_LOOP],
             self::REQUEST_COMMIT_OFFSET => ['status' => self::STATUS_LOOP],
         ];
 
@@ -89,7 +89,7 @@ class State
             $interval = $option['interval'] ?? 200;
 
             Loop::repeat(
-                (int) $interval,
+                (int)$interval,
                 function (string $watcherId) use ($request, $option): void {
                     if ($this->checkRun($request) && $option['func'] !== null) {
                         $this->processing($request, $option['func']());
@@ -106,147 +106,9 @@ class State
         }
     }
 
-    public function stop(): void
-    {
-        $this->removeWatchers();
-
-        $this->callStatus = [];
-        $this->requests   = self::CLEAN_REQUEST_STATE;
-    }
-
-    private function removeWatchers(): void
-    {
-        foreach (array_keys($this->requests) as $request) {
-            if (! isset($this->requests[$request]['watcher'])) {
-                return;
-            }
-
-            Loop::cancel($this->requests[$request]['watcher']);
-        }
-    }
-
-    /**
-     * @param mixed|null $context
-     */
-    public function succRun(int $key, $context = null): void
-    {
-        if (! isset($this->callStatus[$key])) {
-            return;
-        }
-
-        switch ($key) {
-            case self::REQUEST_METADATA:
-                $this->callStatus[$key]['status'] = (self::STATUS_LOOP | self::STATUS_FINISH);
-                if ((bool) $context === true) { // if kafka broker is change
-                    $this->recover();
-                }
-                break;
-            case self::REQUEST_GETGROUP:
-            case self::REQUEST_JOINGROUP:
-            case self::REQUEST_SYNCGROUP:
-                $this->callStatus[$key]['status'] = (self::STATUS_STOP | self::STATUS_FINISH);
-                break;
-            case self::REQUEST_HEARTGROUP:
-            case self::REQUEST_FETCH_OFFSET:
-            case self::REQUEST_COMMIT_OFFSET:
-                $this->callStatus[$key]['status'] = (self::STATUS_LOOP | self::STATUS_FINISH);
-                break;
-            case self::REQUEST_OFFSET:
-                if (! isset($this->callStatus[$key]['context'])) {
-                    $this->callStatus[$key]['status'] = (self::STATUS_LOOP | self::STATUS_FINISH);
-                    break;
-                }
-                unset($this->callStatus[$key]['context'][$context]);
-                $contextStatus = $this->callStatus[$key]['context'];
-                if (empty($contextStatus)) {
-                    $this->callStatus[$key]['status'] = (self::STATUS_LOOP | self::STATUS_FINISH);
-                }
-                break;
-            case self::REQUEST_FETCH:
-                if (! isset($this->callStatus[$key]['context'])) {
-                    $this->callStatus[$key]['status'] = (self::STATUS_LOOP | self::STATUS_FINISH);
-                    break;
-                }
-                unset($this->callStatus[$key]['context'][$context]);
-                $contextStatus = $this->callStatus[$key]['context'];
-                if (empty($contextStatus)) {
-                    $this->callStatus[$key]['status'] = (self::STATUS_LOOP | self::STATUS_FINISH);
-                    $this->requests[self::REQUEST_COMMIT_OFFSET]['func']();
-                }
-                break;
-        }
-    }
-
-    /**
-     * @param mixed|null $context
-     */
-    public function failRun(int $key, $context = null): void
-    {
-        if (! isset($this->callStatus[$key])) {
-            return;
-        }
-
-        switch ($key) {
-            case self::REQUEST_METADATA:
-                $this->callStatus[$key]['status'] = self::STATUS_LOOP;
-                break;
-            case self::REQUEST_GETGROUP:
-            case self::REQUEST_JOINGROUP:
-            case self::REQUEST_SYNCGROUP:
-                $this->recover();
-                break;
-        }
-    }
-
-    /**
-     * @param callable[] $callbacks
-     */
-    public function setCallback(array $callbacks): void
-    {
-        foreach ($callbacks as $request => $callback) {
-            $this->requests[$request]['func'] = $callback;
-        }
-    }
-
-    public function rejoin(): void
-    {
-        $joinGroupStatus = $this->callStatus[self::REQUEST_JOINGROUP]['status'];
-
-        if (($joinGroupStatus & self::STATUS_PROCESS) === self::STATUS_PROCESS) {
-            return;
-        }
-
-        $this->callStatus = [
-            self::REQUEST_METADATA      => $this->callStatus[self::REQUEST_METADATA],
-            self::REQUEST_GETGROUP      => $this->callStatus[self::REQUEST_GETGROUP],
-            self::REQUEST_JOINGROUP     => ['status' => self::STATUS_START],
-            self::REQUEST_SYNCGROUP     => ['status' => self::STATUS_START],
-            self::REQUEST_HEARTGROUP    => ['status' => self::STATUS_LOOP],
-            self::REQUEST_OFFSET        => ['status' => self::STATUS_LOOP],
-            self::REQUEST_FETCH         => ['status' => self::STATUS_LOOP],
-            self::REQUEST_FETCH_OFFSET  => ['status' => self::STATUS_LOOP],
-            self::REQUEST_COMMIT_OFFSET => ['status' => self::STATUS_LOOP],
-        ];
-    }
-
-    public function recover(): void
-    {
-        $this->callStatus = [
-            self::REQUEST_METADATA      => $this->callStatus[self::REQUEST_METADATA],
-            self::REQUEST_GETGROUP      => ['status' => self::STATUS_START],
-            self::REQUEST_JOINGROUP     => ['status' => self::STATUS_START],
-            self::REQUEST_SYNCGROUP     => ['status' => self::STATUS_START],
-            self::REQUEST_HEARTGROUP    => ['status' => self::STATUS_LOOP],
-            self::REQUEST_OFFSET        => ['status' => self::STATUS_LOOP],
-            self::REQUEST_FETCH         => ['status' => self::STATUS_LOOP],
-            self::REQUEST_FETCH_OFFSET  => ['status' => self::STATUS_LOOP],
-            self::REQUEST_COMMIT_OFFSET => ['status' => self::STATUS_LOOP],
-        ];
-    }
-
     protected function checkRun(int $key): bool
     {
-        if (! isset($this->callStatus[$key])) {
+        if (!isset($this->callStatus[$key])) {
             return false;
         }
 
@@ -352,7 +214,7 @@ class State
      */
     protected function processing(int $key, $context): void
     {
-        if (! isset($this->callStatus[$key])) {
+        if (!isset($this->callStatus[$key])) {
             return;
         }
 
@@ -380,5 +242,143 @@ class State
                 $this->callStatus[$key]['context'] = $contextStatus;
                 break;
         }
+    }
+
+    public function stop(): void
+    {
+        $this->removeWatchers();
+
+        $this->callStatus = [];
+        $this->requests = self::CLEAN_REQUEST_STATE;
+    }
+
+    private function removeWatchers(): void
+    {
+        foreach (array_keys($this->requests) as $request) {
+            if (!isset($this->requests[$request]['watcher'])) {
+                return;
+            }
+
+            Loop::cancel($this->requests[$request]['watcher']);
+        }
+    }
+
+    /**
+     * @param mixed|null $context
+     */
+    public function succRun(int $key, $context = null): void
+    {
+        if (!isset($this->callStatus[$key])) {
+            return;
+        }
+
+        switch ($key) {
+            case self::REQUEST_METADATA:
+                $this->callStatus[$key]['status'] = (self::STATUS_LOOP | self::STATUS_FINISH);
+                if ((bool)$context === true) { // if kafka broker is change
+                    $this->recover();
+                }
+                break;
+            case self::REQUEST_GETGROUP:
+            case self::REQUEST_JOINGROUP:
+            case self::REQUEST_SYNCGROUP:
+                $this->callStatus[$key]['status'] = (self::STATUS_STOP | self::STATUS_FINISH);
+                break;
+            case self::REQUEST_HEARTGROUP:
+            case self::REQUEST_FETCH_OFFSET:
+            case self::REQUEST_COMMIT_OFFSET:
+                $this->callStatus[$key]['status'] = (self::STATUS_LOOP | self::STATUS_FINISH);
+                break;
+            case self::REQUEST_OFFSET:
+                if (!isset($this->callStatus[$key]['context'])) {
+                    $this->callStatus[$key]['status'] = (self::STATUS_LOOP | self::STATUS_FINISH);
+                    break;
+                }
+                unset($this->callStatus[$key]['context'][$context]);
+                $contextStatus = $this->callStatus[$key]['context'];
+                if (empty($contextStatus)) {
+                    $this->callStatus[$key]['status'] = (self::STATUS_LOOP | self::STATUS_FINISH);
+                }
+                break;
+            case self::REQUEST_FETCH:
+                if (!isset($this->callStatus[$key]['context'])) {
+                    $this->callStatus[$key]['status'] = (self::STATUS_LOOP | self::STATUS_FINISH);
+                    break;
+                }
+                unset($this->callStatus[$key]['context'][$context]);
+                $contextStatus = $this->callStatus[$key]['context'];
+                if (empty($contextStatus)) {
+                    $this->callStatus[$key]['status'] = (self::STATUS_LOOP | self::STATUS_FINISH);
+                    $this->requests[self::REQUEST_COMMIT_OFFSET]['func']();
+                }
+                break;
+        }
+    }
+
+    public function recover(): void
+    {
+        $this->callStatus = [
+            self::REQUEST_METADATA => $this->callStatus[self::REQUEST_METADATA],
+            self::REQUEST_GETGROUP => ['status' => self::STATUS_START],
+            self::REQUEST_JOINGROUP => ['status' => self::STATUS_START],
+            self::REQUEST_SYNCGROUP => ['status' => self::STATUS_START],
+            self::REQUEST_HEARTGROUP => ['status' => self::STATUS_LOOP],
+            self::REQUEST_OFFSET => ['status' => self::STATUS_LOOP],
+            self::REQUEST_FETCH => ['status' => self::STATUS_LOOP],
+            self::REQUEST_FETCH_OFFSET => ['status' => self::STATUS_LOOP],
+            self::REQUEST_COMMIT_OFFSET => ['status' => self::STATUS_LOOP],
+        ];
+    }
+
+    /**
+     * @param mixed|null $context
+     */
+    public function failRun(int $key, $context = null): void
+    {
+        if (!isset($this->callStatus[$key])) {
+            return;
+        }
+
+        switch ($key) {
+            case self::REQUEST_METADATA:
+                $this->callStatus[$key]['status'] = self::STATUS_LOOP;
+                break;
+            case self::REQUEST_GETGROUP:
+            case self::REQUEST_JOINGROUP:
+            case self::REQUEST_SYNCGROUP:
+                $this->recover();
+                break;
+        }
+    }
+
+    /**
+     * @param callable[] $callbacks
+     */
+    public function setCallback(array $callbacks): void
+    {
+        foreach ($callbacks as $request => $callback) {
+            $this->requests[$request]['func'] = $callback;
+        }
+    }
+
+    public function rejoin(): void
+    {
+        $joinGroupStatus = $this->callStatus[self::REQUEST_JOINGROUP]['status'];
+
+        if (($joinGroupStatus & self::STATUS_PROCESS) === self::STATUS_PROCESS) {
+            return;
+        }
+
+        $this->callStatus = [
+            self::REQUEST_METADATA => $this->callStatus[self::REQUEST_METADATA],
+            self::REQUEST_GETGROUP => $this->callStatus[self::REQUEST_GETGROUP],
+            self::REQUEST_JOINGROUP => ['status' => self::STATUS_START],
+            self::REQUEST_SYNCGROUP => ['status' => self::STATUS_START],
+            self::REQUEST_HEARTGROUP => ['status' => self::STATUS_LOOP],
+            self::REQUEST_OFFSET => ['status' => self::STATUS_LOOP],
+            self::REQUEST_FETCH => ['status' => self::STATUS_LOOP],
+            self::REQUEST_FETCH_OFFSET => ['status' => self::STATUS_LOOP],
+            self::REQUEST_COMMIT_OFFSET => ['status' => self::STATUS_LOOP],
+        ];
     }
 }

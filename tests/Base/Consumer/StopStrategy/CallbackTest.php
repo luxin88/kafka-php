@@ -30,7 +30,7 @@ final class CallbackTest extends TestCase
     public function setupShouldStopTheConsumerOnceTheCallbackReturnsTrue(): void
     {
         $this->consumer->expects($this->once())
-                       ->method('stop');
+            ->method('stop');
 
         $executionCount = 0;
 

@@ -26,7 +26,7 @@ final class ProduceTest extends TestCase
     {
         $clock = new FrozenClock(new \DateTimeImmutable('2017-12-24 11:12:10.123'));
 
-        $this->produce   = new Produce('0.9.0.1', $clock);
+        $this->produce = new Produce('0.9.0.1', $clock);
         $this->produce10 = new Produce('0.10.1.0', $clock);
     }
 
@@ -212,7 +212,7 @@ final class ProduceTest extends TestCase
 
     public function testDecode(): void
     {
-        $data     = '0000000100047465737400000001000000000000000000000000002a00000000';
+        $data = '0000000100047465737400000001000000000000000000000000002a00000000';
         $expected = '{"throttleTime":0,"data":[{"topicName":"test","partitions":[{"partition":0,"errorCode":0,"offset":14,"timestamp":0}]}]}';
 
         self::assertJsonStringEqualsJsonString($expected, json_encode($this->produce->decode(hex2bin($data))));
@@ -220,7 +220,7 @@ final class ProduceTest extends TestCase
 
     public function testDecodeKafka10(): void
     {
-        $data     = '0000000100047465737400000001000000000000000000000000006effffffffffffffff00000000';
+        $data = '0000000100047465737400000001000000000000000000000000006effffffffffffffff00000000';
         $expected = '{"throttleTime":0,"data":[{"topicName":"test","partitions":[{"partition":0,"errorCode":0,"offset":22,"timestamp":-1}]}]}';
 
         self::assertJsonStringEqualsJsonString($expected, json_encode($this->produce10->decode(hex2bin($data))));

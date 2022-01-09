@@ -36,9 +36,9 @@ final class Callback implements StopStrategy
         Loop::repeat(
             $this->interval,
             function (string $watcherId) use ($consumer): void {
-                $shouldStop = (bool) ($this->callback)();
+                $shouldStop = (bool)($this->callback)();
 
-                if (! $shouldStop) {
+                if (!$shouldStop) {
                     return;
                 }
 

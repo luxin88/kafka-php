@@ -61,24 +61,24 @@ class Assignment
      */
     private $preCommitOffsets = [];
 
-    public function setMemberId(string $memberId): void
-    {
-        $this->memberId = $memberId;
-    }
-
     public function getMemberId(): string
     {
         return $this->memberId;
     }
 
-    public function setGenerationId(int $generationId): void
+    public function setMemberId(string $memberId): void
     {
-        $this->generationId = $generationId;
+        $this->memberId = $memberId;
     }
 
     public function getGenerationId(): ?int
     {
         return $this->generationId;
+    }
+
+    public function setGenerationId(int $generationId): void
+    {
+        $this->generationId = $generationId;
     }
 
     /**
@@ -100,24 +100,24 @@ class Assignment
 
         $memberCount = count($result);
 
-        $count   = 0;
+        $count = 0;
         $members = [];
 
         foreach ($topics as $topicName => $partitionition) {
             foreach ($partitionition as $partitionId => $leaderId) {
                 $memberNum = $count % $memberCount;
 
-                if (! isset($members[$memberNum])) {
+                if (!isset($members[$memberNum])) {
                     $members[$memberNum] = [];
                 }
 
-                if (! isset($members[$memberNum][$topicName])) {
+                if (!isset($members[$memberNum][$topicName])) {
                     $members[$memberNum][$topicName] = [];
                 }
 
                 $members[$memberNum][$topicName]['topic_name'] = $topicName;
 
-                if (! isset($members[$memberNum][$topicName]['partitions'])) {
+                if (!isset($members[$memberNum][$topicName]['partitions'])) {
                     $members[$memberNum][$topicName]['partitions'] = [];
                 }
 
@@ -130,21 +130,13 @@ class Assignment
 
         foreach ($result as $key => $member) {
             $data[] = [
-                'version'     => 0,
-                'member_id'   => $member['memberId'],
+                'version' => 0,
+                'member_id' => $member['memberId'],
                 'assignments' => $members[$key] ?? [],
             ];
         }
 
         $this->assignments = $data;
-    }
-
-    /**
-     * @param mixed[][] $topics
-     */
-    public function setTopics(array $topics): void
-    {
-        $this->topics = $topics;
     }
 
     /**
@@ -156,11 +148,11 @@ class Assignment
     }
 
     /**
-     * @param int[][] $offsets
+     * @param mixed[][] $topics
      */
-    public function setOffsets(array $offsets): void
+    public function setTopics(array $topics): void
     {
-        $this->offsets = $offsets;
+        $this->topics = $topics;
     }
 
     /**
@@ -174,9 +166,9 @@ class Assignment
     /**
      * @param int[][] $offsets
      */
-    public function setLastOffsets(array $offsets): void
+    public function setOffsets(array $offsets): void
     {
-        $this->lastOffsets = $offsets;
+        $this->offsets = $offsets;
     }
 
     /**
@@ -190,9 +182,9 @@ class Assignment
     /**
      * @param int[][] $offsets
      */
-    public function setFetchOffsets(array $offsets): void
+    public function setLastOffsets(array $offsets): void
     {
-        $this->fetchOffsets = $offsets;
+        $this->lastOffsets = $offsets;
     }
 
     /**
@@ -206,9 +198,9 @@ class Assignment
     /**
      * @param int[][] $offsets
      */
-    public function setConsumerOffsets(array $offsets): void
+    public function setFetchOffsets(array $offsets): void
     {
-        $this->consumerOffsets = $offsets;
+        $this->fetchOffsets = $offsets;
     }
 
     /**
@@ -219,6 +211,14 @@ class Assignment
         return $this->consumerOffsets;
     }
 
+    /**
+     * @param int[][] $offsets
+     */
+    public function setConsumerOffsets(array $offsets): void
+    {
+        $this->consumerOffsets = $offsets;
+    }
+
     public function setConsumerOffset(string $topic, int $partition, int $offset): void
     {
         $this->consumerOffsets[$topic][$partition] = $offset;
@@ -226,19 +226,11 @@ class Assignment
 
     public function getConsumerOffset(string $topic, int $partition): ?int
     {
-        if (! isset($this->consumerOffsets[$topic][$partition])) {
+        if (!isset($this->consumerOffsets[$topic][$partition])) {
             return null;
         }
 
         return $this->consumerOffsets[$topic][$partition];
-    }
-
-    /**
-     * @param int[][] $offsets
-     */
-    public function setCommitOffsets(array $offsets): void
-    {
-        $this->commitOffsets = $offsets;
     }
 
     /**
@@ -249,17 +241,17 @@ class Assignment
         return $this->commitOffsets;
     }
 
-    public function setCommitOffset(string $topic, int $partition, int $offset): void
-    {
-        $this->commitOffsets[$topic][$partition] = $offset;
-    }
-
     /**
      * @param int[][] $offsets
      */
-    public function setPreCommitOffsets(array $offsets): void
+    public function setCommitOffsets(array $offsets): void
     {
-        $this->preCommitOffsets = $offsets;
+        $this->commitOffsets = $offsets;
+    }
+
+    public function setCommitOffset(string $topic, int $partition, int $offset): void
+    {
+        $this->commitOffsets[$topic][$partition] = $offset;
     }
 
     /**
@@ -270,6 +262,14 @@ class Assignment
         return $this->preCommitOffsets;
     }
 
+    /**
+     * @param int[][] $offsets
+     */
+    public function setPreCommitOffsets(array $offsets): void
+    {
+        $this->preCommitOffsets = $offsets;
+    }
+
     public function setPreCommitOffset(string $topic, int $partition, int $offset): void
     {
         $this->preCommitOffsets[$topic][$partition] = $offset;
@@ -277,11 +277,11 @@ class Assignment
 
     public function clearOffset(): void
     {
-        $this->offsets          = [];
-        $this->lastOffsets      = [];
-        $this->fetchOffsets     = [];
-        $this->consumerOffsets  = [];
-        $this->commitOffsets    = [];
+        $this->offsets = [];
+        $this->lastOffsets = [];
+        $this->fetchOffsets = [];
+        $this->consumerOffsets = [];
+        $this->commitOffsets = [];
         $this->preCommitOffsets = [];
     }
 }

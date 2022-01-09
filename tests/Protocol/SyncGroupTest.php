@@ -131,7 +131,7 @@ final class SyncGroupTest extends TestCase
             'member_id' => 'kafka-php-bd5d5bb2-2a1f-43d4-b831-b1510d81ac5c',
             'data' => [
                 [
-                    'version' => 0 ,
+                    'version' => 0,
                     'member_id' => 'kafka-php-bd5d5bb2-2a1f-43d4-b831-b1510d81ac5c',
                 ],
             ],
@@ -152,7 +152,7 @@ final class SyncGroupTest extends TestCase
             'member_id' => 'kafka-php-bd5d5bb2-2a1f-43d4-b831-b1510d81ac5c',
             'data' => [
                 [
-                    'version' => 0 ,
+                    'version' => 0,
                     'member_id' => 'kafka-php-bd5d5bb2-2a1f-43d4-b831-b1510d81ac5c',
                     'assignments' => [
                         [],
@@ -176,7 +176,7 @@ final class SyncGroupTest extends TestCase
             'member_id' => 'kafka-php-bd5d5bb2-2a1f-43d4-b831-b1510d81ac5c',
             'data' => [
                 [
-                    'version' => 0 ,
+                    'version' => 0,
                     'member_id' => 'kafka-php-bd5d5bb2-2a1f-43d4-b831-b1510d81ac5c',
                     'assignments' => [
                         ['topic_name' => 'test'],
@@ -190,7 +190,7 @@ final class SyncGroupTest extends TestCase
 
     public function testDecode(): void
     {
-        $data     = '000000000018000000000001000474657374000000010000000000000000';
+        $data = '000000000018000000000001000474657374000000010000000000000000';
         $expected = '{"errorCode":0,"partitionAssignments":[{"topicName":"test","partitions":[0]}],"version":0,"userData":""}';
 
         self::assertJsonStringEqualsJsonString($expected, json_encode($this->sync->decode(hex2bin($data))));

@@ -40,7 +40,7 @@ final class GroupCoordinatorTest extends TestCase
 
     public function testDecode(): void
     {
-        $data     = '000000000003000b31302e31332e342e313539000023e8';
+        $data = '000000000003000b31302e31332e342e313539000023e8';
         $expected = '{"errorCode":0,"coordinatorId":3,"coordinatorHost":"10.13.4.159","coordinatorPort":9192}';
 
         $test = $this->group->decode(hex2bin($data));

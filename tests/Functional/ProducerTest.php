@@ -9,61 +9,45 @@ use Kafka\ConsumerConfig;
 use Kafka\ProducerConfig;
 use Kafka\Protocol\Protocol;
 use PHPUnit\Framework\TestCase;
-use const STR_PAD_LEFT;
 use function getenv;
 use function str_pad;
 use function version_compare;
+use const STR_PAD_LEFT;
 
 abstract class ProducerTest extends TestCase
 {
     private const MESSAGES_TO_SEND = 30;
-
+    /**
+     * @var bool
+     */
+    protected $compress;
     /**
      * @var string
      */
     private $version;
-
     /**
      * @var string
      */
     private $brokers;
-
     /**
      * @var string
      */
     private $topic;
 
     /**
-     * @var bool
-     */
-    protected $compress;
-
-    /**
      * @before
      */
     public function prepareEnvironment(): void
     {
-        $this->version  = getenv('KAFKA_VERSION');
-        $this->brokers  = getenv('KAFKA_BROKERS');
-        $this->topic    = getenv('KAFKA_TOPIC');
+        $this->version = getenv('KAFKA_VERSION');
+        $this->brokers = getenv('KAFKA_BROKERS');
+        $this->topic = getenv('KAFKA_TOPIC');
         $this->compress = getenv('KAFKA_COMPRESS') === '1';
 
-        if (! $this->version || ! $this->brokers || ! $this->topic) {
+        if (!$this->version || !$this->brokers || !$this->topic) {
             self::markTestSkipped(
                 'Environment variables "KAFKA_VERSION", "KAFKA_TOPIC", and "KAFKA_BROKERS" must be provided'
             );
-        }
-    }
-
-    protected function configureProducer(): void
-    {
-        /** @var ProducerConfig $config */
-        $config = ProducerConfig::getInstance();
-        $config->setMetadataBrokerList($this->brokers);
-        $config->setBrokerVersion($this->version);
-
-        if ($this->compress) {
-            $config->setCompression(Protocol::COMPRESSION_GZIP);
         }
     }
 
@@ -77,7 +61,7 @@ abstract class ProducerTest extends TestCase
         $this->configureConsumer();
 
         $consumedMessages = 0;
-        $executionEnd     = new \DateTimeImmutable('+1 minute');
+        $executionEnd = new \DateTimeImmutable('+1 minute');
 
         $consumer = new Consumer(
             new Callback(
@@ -134,10 +118,22 @@ abstract class ProducerTest extends TestCase
         for ($i = 0; $i < $amount; ++$i) {
             $messages[] = [
                 'topic' => $this->topic,
-                'value' => 'msg-' . str_pad((string) ($i + 1), 2, '0', STR_PAD_LEFT),
+                'value' => 'msg-' . str_pad((string)($i + 1), 2, '0', STR_PAD_LEFT),
             ];
         }
 
         return $messages;
+    }
+
+    protected function configureProducer(): void
+    {
+        /** @var ProducerConfig $config */
+        $config = ProducerConfig::getInstance();
+        $config->setMetadataBrokerList($this->brokers);
+        $config->setBrokerVersion($this->version);
+
+        if ($this->compress) {
+            $config->setCompression(Protocol::COMPRESSION_GZIP);
+        }
     }
 }

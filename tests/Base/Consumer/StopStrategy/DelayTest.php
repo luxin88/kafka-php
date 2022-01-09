@@ -30,7 +30,7 @@ final class DelayTest extends TestCase
     public function setupShouldStopTheConsumerAfterTheConfiguredDelay(): void
     {
         $this->consumer->expects($this->once())
-                       ->method('stop');
+            ->method('stop');
 
         $strategy = new Delay(10);
         $strategy->setup($this->consumer);

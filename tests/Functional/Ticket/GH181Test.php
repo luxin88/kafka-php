@@ -16,7 +16,7 @@ final class GH181Test extends TestCase
         $version = getenv('KAFKA_VERSION');
         $brokers = getenv('KAFKA_BROKERS');
 
-        if (! $version || ! $brokers) {
+        if (!$version || !$brokers) {
             self::markTestSkipped(
                 'Environment variables "KAFKA_VERSION" and "KAFKA_BROKERS" must be provided'
             );
@@ -50,13 +50,13 @@ final class GH181Test extends TestCase
     public function dataProviderTestInvalidRecordSet(): array
     {
         return [
-            'missing topic'                => [['value' => 'a value']],
+            'missing topic' => [['value' => 'a value']],
             'missing topic – empty string' => [['topic' => '', 'value' => 'a value']],
-            'invalid topic type'           => [['topic' => 1, 'value' => 'a value']],
-            'missing value'                => [['topic' => 'test']],
-            'invalid value type'           => [['topic' => 'test', 'value' => 1]],
+            'invalid topic type' => [['topic' => 1, 'value' => 'a value']],
+            'missing value' => [['topic' => 'test']],
+            'invalid value type' => [['topic' => 'test', 'value' => 1]],
             'missing value – empty string' => [['topic' => 'test', 'value' => '']],
-            'non-existing topic'           => [
+            'non-existing topic' => [
                 [
                     'topic' => 'non-existing topic',
                     'value' => 'a value',

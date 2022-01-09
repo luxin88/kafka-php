@@ -19,27 +19,25 @@ class ConsumerConfig extends Config
 {
     use SingletonTrait;
 
-    public const CONSUME_AFTER_COMMIT_OFFSET  = 1;
+    public const CONSUME_AFTER_COMMIT_OFFSET = 1;
     public const CONSUME_BEFORE_COMMIT_OFFSET = 2;
-
+    /**
+     * @var mixed[]
+     */
+    protected static $defaults = [
+        'groupId' => '',
+        'sessionTimeout' => 30000,
+        'rebalanceTimeout' => 30000,
+        'topics' => [],
+        'offsetReset' => 'latest', // earliest
+        'maxBytes' => 65536, // 64kb
+        'maxWaitTime' => 100,
+    ];
     /**
      * @var mixed[]
      */
     protected $runtimeOptions = [
         'consume_mode' => self::CONSUME_AFTER_COMMIT_OFFSET,
-    ];
-
-    /**
-     * @var mixed[]
-     */
-    protected static $defaults = [
-        'groupId'          => '',
-        'sessionTimeout'   => 30000,
-        'rebalanceTimeout' => 30000,
-        'topics'           => [],
-        'offsetReset'      => 'latest', // earliest
-        'maxBytes'         => 65536, // 64kb
-        'maxWaitTime'      => 100,
     ];
 
     /**
@@ -99,7 +97,7 @@ class ConsumerConfig extends Config
      */
     public function setOffsetReset(string $offsetReset): void
     {
-        if (! in_array($offsetReset, ['latest', 'earliest'], true)) {
+        if (!in_array($offsetReset, ['latest', 'earliest'], true)) {
             throw new Exception\Config('Set offset reset value is invalid, must set it `latest` or `earliest`');
         }
 
@@ -138,7 +136,7 @@ class ConsumerConfig extends Config
 
     public function setConsumeMode(int $mode): void
     {
-        if (! in_array($mode, [self::CONSUME_AFTER_COMMIT_OFFSET, self::CONSUME_BEFORE_COMMIT_OFFSET], true)) {
+        if (!in_array($mode, [self::CONSUME_AFTER_COMMIT_OFFSET, self::CONSUME_BEFORE_COMMIT_OFFSET], true)) {
             throw new Exception\Config(
                 'Invalid consume mode given, it must be either "ConsumerConfig::CONSUME_AFTER_COMMIT_OFFSET" or '
                 . '"ConsumerConfig::CONSUME_BEFORE_COMMIT_OFFSET"'

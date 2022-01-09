@@ -50,6 +50,15 @@ class Consumer
         Loop::run();
     }
 
+    private function setupStopStrategy(): void
+    {
+        if ($this->stopStrategy === null) {
+            return;
+        }
+
+        $this->stopStrategy->setup($this);
+    }
+
     /**
      * FIXME: remove it when we implement dependency injection
      *
@@ -67,15 +76,6 @@ class Consumer
         }
 
         return $process;
-    }
-
-    private function setupStopStrategy(): void
-    {
-        if ($this->stopStrategy === null) {
-            return;
-        }
-
-        $this->stopStrategy->setup($this);
     }
 
     public function stop(): void

@@ -55,7 +55,7 @@ class Producer
      */
     private function sendSynchronously(array $data): array
     {
-        if (! $this->process instanceof SyncProcess) {
+        if (!$this->process instanceof SyncProcess) {
             throw new Exception('An asynchronous process is not able to send messages synchronously');
         }
 

@@ -49,7 +49,7 @@ class Socket extends CommonSocket
 
     public function connect(): void
     {
-        if (! $this->isSocketDead()) {
+        if (!$this->isSocketDead()) {
             return;
         }
 
@@ -85,15 +85,18 @@ class Socket extends CommonSocket
         );
     }
 
+    /**
+     * check the stream is close
+     */
+    protected function isSocketDead(): bool
+    {
+        return !is_resource($this->stream) || @feof($this->stream);
+    }
+
     public function reconnect(): void
     {
         $this->close();
         $this->connect();
-    }
-
-    public function setOnReadable(callable $read): void
-    {
-        $this->onReadable = $read;
     }
 
     public function close(): void
@@ -105,14 +108,9 @@ class Socket extends CommonSocket
             fclose($this->stream);
         }
 
-        $this->readBuffer     = '';
-        $this->writeBuffer    = '';
+        $this->readBuffer = '';
+        $this->writeBuffer = '';
         $this->readNeedLength = 0;
-    }
-
-    public function isResource(): bool
-    {
-        return is_resource($this->stream);
     }
 
     /**
@@ -125,7 +123,7 @@ class Socket extends CommonSocket
      */
     public function read($data): void
     {
-        $this->readBuffer .= (string) $data;
+        $this->readBuffer .= (string)$data;
 
         do {
             if ($this->readNeedLength === 0) { // response start
@@ -133,21 +131,21 @@ class Socket extends CommonSocket
                     return;
                 }
 
-                $dataLen              = Protocol::unpack(Protocol::BIT_B32, substr($this->readBuffer, 0, 4));
+                $dataLen = Protocol::unpack(Protocol::BIT_B32, substr($this->readBuffer, 0, 4));
                 $this->readNeedLength = $dataLen;
-                $this->readBuffer     = substr($this->readBuffer, 4);
+                $this->readBuffer = substr($this->readBuffer, 4);
             }
 
             if (strlen($this->readBuffer) < $this->readNeedLength) {
                 return;
             }
 
-            $data = (string) substr($this->readBuffer, 0, $this->readNeedLength);
+            $data = (string)substr($this->readBuffer, 0, $this->readNeedLength);
 
-            $this->readBuffer     = substr($this->readBuffer, $this->readNeedLength);
+            $this->readBuffer = substr($this->readBuffer, $this->readNeedLength);
             $this->readNeedLength = 0;
 
-            ($this->onReadable)($data, (int) $this->stream);
+            ($this->onReadable)($data, (int)$this->stream);
         } while (strlen($this->readBuffer));
     }
 
@@ -176,11 +174,13 @@ class Socket extends CommonSocket
         $this->writeBuffer = substr($this->writeBuffer, $bytesWritten);
     }
 
-    /**
-     * check the stream is close
-     */
-    protected function isSocketDead(): bool
+    public function setOnReadable(callable $read): void
     {
-        return ! is_resource($this->stream) || @feof($this->stream);
+        $this->onReadable = $read;
+    }
+
+    public function isResource(): bool
+    {
+        return is_resource($this->stream);
     }
 }

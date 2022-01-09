@@ -26,7 +26,7 @@ class BrokerTest extends TestCase
     public function testData(): void
     {
         $broker = $this->getBroker();
-        $data   = [
+        $data = [
             'brokers' => [
                 [
                     'host' => '127.0.0.1',
@@ -85,7 +85,7 @@ class BrokerTest extends TestCase
             1 => '127.0.0.1:9192',
             2 => '127.0.0.1:9292',
         ];
-        $topics  = [
+        $topics = [
             'test' => [
                 0 => 0,
                 1 => 2,
@@ -95,10 +95,15 @@ class BrokerTest extends TestCase
         $this->assertEquals($topics, $broker->getTopics());
     }
 
+    private function getBroker(): Broker
+    {
+        return Broker::getInstance();
+    }
+
     public function getConnect(): void
     {
         $broker = $this->getBroker();
-        $data   = [
+        $data = [
             [
                 'host' => '127.0.0.1',
                 'port' => '9092',
@@ -138,16 +143,11 @@ class BrokerTest extends TestCase
 
     public function testGetSocketNotSetConfig(): void
     {
-        $broker   = $this->getBroker();
+        $broker = $this->getBroker();
         $hostname = '127.0.0.1';
-        $port     = 9092;
-        $socket   = $broker->getSocket($hostname, $port, true);
+        $port = 9092;
+        $socket = $broker->getSocket($hostname, $port, true);
 
         $this->assertInstanceOf(SocketSync::class, $socket);
-    }
-
-    private function getBroker(): Broker
-    {
-        return Broker::getInstance();
     }
 }

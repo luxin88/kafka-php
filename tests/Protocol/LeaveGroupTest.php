@@ -24,12 +24,12 @@ final class LeaveGroupTest extends TestCase
     public function testEncode(): void
     {
         $data = [
-            'group_id'  => 'test',
+            'group_id' => 'test',
             'member_id' => 'kafka-php-eb19c0ea-4b3e-4ed0-bada-c873951c8eea',
         ];
 
         $expected = '00000049000d00000000000d00096b61666b612d706870000474657374002e6b61666b612d7068702d65623139633065612d346233652d346564302d626164612d633837333935316338656561';
-        $test     = $this->leave->encode($data);
+        $test = $this->leave->encode($data);
 
         self::assertSame($expected, bin2hex($test));
     }
@@ -56,7 +56,7 @@ final class LeaveGroupTest extends TestCase
 
     public function testDecode(): void
     {
-        $test     = $this->leave->decode(hex2bin('0000'));
+        $test = $this->leave->decode(hex2bin('0000'));
         $expected = '{"errorCode":0}';
 
         self::assertJsonStringEqualsJsonString($expected, json_encode($test));

@@ -17,17 +17,17 @@ class LeaveGroup extends Protocol
      */
     public function encode(array $payloads = []): string
     {
-        if (! isset($payloads['group_id'])) {
+        if (!isset($payloads['group_id'])) {
             throw new ProtocolException('given leave group data invalid. `group_id` is undefined.');
         }
 
-        if (! isset($payloads['member_id'])) {
+        if (!isset($payloads['member_id'])) {
             throw new ProtocolException('given leave group data invalid. `member_id` is undefined.');
         }
 
         $header = $this->requestHeader('kafka-php', self::LEAVE_GROUP_REQUEST, self::LEAVE_GROUP_REQUEST);
-        $data   = self::encodeString($payloads['group_id'], self::PACK_INT16);
-        $data  .= self::encodeString($payloads['member_id'], self::PACK_INT16);
+        $data = self::encodeString($payloads['group_id'], self::PACK_INT16);
+        $data .= self::encodeString($payloads['member_id'], self::PACK_INT16);
 
         return self::encodeString($header . $data, self::PACK_INT32);
     }

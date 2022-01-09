@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 namespace Kafka;
 
-use const STREAM_CLIENT_CONNECT;
 use function feof;
 use function fread;
 use function fwrite;
@@ -17,6 +16,7 @@ use function stream_socket_client;
 use function strlen;
 use function substr;
 use function trim;
+use const STREAM_CLIENT_CONNECT;
 
 abstract class CommonSocket
 {
@@ -90,9 +90,9 @@ abstract class CommonSocket
 
     public function __construct(string $host, int $port, ?Config $config = null, ?SaslMechanism $saslProvider = null)
     {
-        $this->host         = $host;
-        $this->port         = $port;
-        $this->config       = $config;
+        $this->host = $host;
+        $this->port = $port;
+        $this->config = $config;
         $this->saslProvider = $saslProvider;
     }
 
@@ -122,142 +122,11 @@ abstract class CommonSocket
     }
 
     /**
-     * @throws Exception
-     */
-    protected function createStream(): void
-    {
-        if (trim($this->host) === '') {
-            throw new Exception('Cannot open null host.');
-        }
-
-        if ($this->port <= 0) {
-            throw new Exception('Cannot open without port.');
-        }
-
-        $remoteSocket = sprintf('tcp://%s:%s', $this->host, $this->port);
-        $context      = stream_context_create([]);
-
-        if ($this->config !== null && $this->config->getSslEnable()) { // ssl connection
-            $remoteSocket = sprintf('ssl://%s:%s', $this->host, $this->port);
-            $context      = $this->createSslStreamContext();
-        }
-
-        $this->stream = $this->createSocket($remoteSocket, $context, $errno, $errstr);
-
-        if (! is_resource($this->stream)) {
-            throw new Exception(
-                sprintf('Could not connect to %s:%d (%s [%d])', $this->host, $this->port, $errstr, $errno)
-            );
-        }
-
-        // SASL auth
-        if ($this->saslProvider !== null) {
-            $this->saslProvider->authenticate($this);
-        }
-    }
-
-    /**
-     * Ecapsulation of stream_context_create for SSL connections
-     *
-     * @return resource $context
-     */
-    protected function createSslStreamContext()
-    {
-        if (is_null($this->config)) {
-            throw new Exception('Cannot build SSL context without configuration');
-        }
-
-        if ($this->config->getSslEnableAuthentication()) {
-            return stream_context_create(
-                [
-                    'ssl' => [
-                        'local_cert'  => $this->config->getSslLocalCert(),
-                        'local_pk'    => $this->config->getSslLocalPk(),
-                        'verify_peer' => $this->config->getSslVerifyPeer(),
-                        'passphrase'  => $this->config->getSslPassphrase(),
-                        'cafile'      => $this->config->getSslCafile(),
-                        'peer_name'   => $this->config->getSslPeerName(),
-                    ],
-                ]
-            );
-        }
-
-        return stream_context_create(
-            [
-                'ssl' => [
-                    'verify_peer' => $this->config->getSslVerifyPeer(),
-                    'cafile'      => $this->config->getSslCafile(),
-                    'peer_name'   => $this->config->getSslPeerName(),
-                ],
-            ]
-        );
-    }
-
-    /**
-     * Encapsulation of stream_socket_client
-     *
-     * Because `stream_socket_client` in stream wrapper mock no effect, if don't create this function will never be testable
-     *
-     * @codeCoverageIgnore
-     *
-     * @param resource $context
-     *
-     * @return resource
-     */
-    protected function createSocket(string $remoteSocket, $context, ?int &$errno, ?string &$errstr)
-    {
-        return stream_socket_client(
-            $remoteSocket,
-            $errno,
-            $errstr,
-            $this->sendTimeoutSec + ($this->sendTimeoutUsec / 1000000),
-            STREAM_CLIENT_CONNECT,
-            $context
-        );
-    }
-
-    /**
      * @return resource
      */
     public function getSocket()
     {
         return $this->stream;
-    }
-
-    /**
-     * Encapsulation of stream_select
-     *
-     * Because `stream_select` in stream wrapper mock no effect, if don't create this function will never be testable
-     *
-     * @codeCoverageIgnore
-     *
-     * @param resource[] $sockets
-     *
-     * @return int|bool
-     */
-    protected function select(array $sockets, int $timeoutSec, int $timeoutUsec, bool $isRead = true)
-    {
-        $null = null;
-
-        if ($isRead) {
-            return @stream_select($sockets, $null, $null, $timeoutSec, $timeoutUsec);
-        }
-
-        return @stream_select($null, $sockets, $null, $timeoutSec, $timeoutUsec);
-    }
-
-    /**
-     * Encapsulation of stream_get_meta_data
-     *
-     * Because `stream_get_meta_data` in stream wrapper mock no effect, if don't create this function will never be testable
-     *
-     * @codeCoverageIgnore
-     *
-     * @return mixed[]
-     */
-    protected function getMetaData(): array
-    {
-        return stream_get_meta_data($this->stream);
     }
 
     /**
@@ -285,7 +154,7 @@ abstract class CommonSocket
             $res = $this->getMetaData();
             $this->close();
 
-            if (! empty($res['timed_out'])) {
+            if (!empty($res['timed_out'])) {
                 throw Exception\Socket::timedOut($length);
             }
 
@@ -293,7 +162,7 @@ abstract class CommonSocket
         }
 
         $remainingBytes = $length;
-        $data           = $chunk = '';
+        $data = $chunk = '';
 
         while ($remainingBytes > 0) {
             $chunk = fread($this->stream, $remainingBytes);
@@ -313,11 +182,49 @@ abstract class CommonSocket
                 continue; // attempt another read
             }
 
-            $data           .= $chunk;
+            $data .= $chunk;
             $remainingBytes -= strlen($chunk);
         }
 
         return $data;
+    }
+
+    /**
+     * Encapsulation of stream_select
+     *
+     * Because `stream_select` in stream wrapper mock no effect, if don't create this function will never be testable
+     *
+     * @codeCoverageIgnore
+     *
+     * @param resource[] $sockets
+     *
+     * @return int|bool
+     */
+    protected function select(array $sockets, int $timeoutSec, int $timeoutUsec, bool $isRead = true)
+    {
+        $null = null;
+
+        if ($isRead) {
+            return @stream_select($sockets, $null, $null, $timeoutSec, $timeoutUsec);
+        }
+
+        return @stream_select($null, $sockets, $null, $timeoutSec, $timeoutUsec);
+    }
+
+    abstract public function close(): void;
+
+    /**
+     * Encapsulation of stream_get_meta_data
+     *
+     * Because `stream_get_meta_data` in stream wrapper mock no effect, if don't create this function will never be testable
+     *
+     * @codeCoverageIgnore
+     *
+     * @return mixed[]
+     */
+    protected function getMetaData(): array
+    {
+        return stream_get_meta_data($this->stream);
     }
 
     /**
@@ -330,7 +237,7 @@ abstract class CommonSocket
         // fwrite to a socket may be partial, so loop until we
         // are done with the entire buffer
         $failedAttempts = 0;
-        $bytesWritten   = 0;
+        $bytesWritten = 0;
 
         $bytesToWrite = strlen($buffer);
 
@@ -344,7 +251,7 @@ abstract class CommonSocket
 
             if ($writable === 0) {
                 $res = $this->getMetaData();
-                if (! empty($res['timed_out'])) {
+                if (!empty($res['timed_out'])) {
                     throw new Exception('Timed out writing ' . $bytesToWrite . ' bytes to stream after writing ' . $bytesWritten . ' bytes');
                 }
 
@@ -381,8 +288,6 @@ abstract class CommonSocket
         return $bytesWritten;
     }
 
-    abstract public function close(): void;
-
     abstract public function connect(): void;
 
     /**
@@ -396,4 +301,99 @@ abstract class CommonSocket
      * @return mixed
      */
     abstract public function read($data);
+
+    /**
+     * @throws Exception
+     */
+    protected function createStream(): void
+    {
+        if (trim($this->host) === '') {
+            throw new Exception('Cannot open null host.');
+        }
+
+        if ($this->port <= 0) {
+            throw new Exception('Cannot open without port.');
+        }
+
+        $remoteSocket = sprintf('tcp://%s:%s', $this->host, $this->port);
+        $context = stream_context_create([]);
+
+        if ($this->config !== null && $this->config->getSslEnable()) { // ssl connection
+            $remoteSocket = sprintf('ssl://%s:%s', $this->host, $this->port);
+            $context = $this->createSslStreamContext();
+        }
+
+        $this->stream = $this->createSocket($remoteSocket, $context, $errno, $errstr);
+
+        if (!is_resource($this->stream)) {
+            throw new Exception(
+                sprintf('Could not connect to %s:%d (%s [%d])', $this->host, $this->port, $errstr, $errno)
+            );
+        }
+
+        // SASL auth
+        if ($this->saslProvider !== null) {
+            $this->saslProvider->authenticate($this);
+        }
+    }
+
+    /**
+     * Ecapsulation of stream_context_create for SSL connections
+     *
+     * @return resource $context
+     */
+    protected function createSslStreamContext()
+    {
+        if (is_null($this->config)) {
+            throw new Exception('Cannot build SSL context without configuration');
+        }
+
+        if ($this->config->getSslEnableAuthentication()) {
+            return stream_context_create(
+                [
+                    'ssl' => [
+                        'local_cert' => $this->config->getSslLocalCert(),
+                        'local_pk' => $this->config->getSslLocalPk(),
+                        'verify_peer' => $this->config->getSslVerifyPeer(),
+                        'passphrase' => $this->config->getSslPassphrase(),
+                        'cafile' => $this->config->getSslCafile(),
+                        'peer_name' => $this->config->getSslPeerName(),
+                    ],
+                ]
+            );
+        }
+
+        return stream_context_create(
+            [
+                'ssl' => [
+                    'verify_peer' => $this->config->getSslVerifyPeer(),
+                    'cafile' => $this->config->getSslCafile(),
+                    'peer_name' => $this->config->getSslPeerName(),
+                ],
+            ]
+        );
+    }
+
+    /**
+     * Encapsulation of stream_socket_client
+     *
+     * Because `stream_socket_client` in stream wrapper mock no effect, if don't create this function will never be testable
+     *
+     * @codeCoverageIgnore
+     *
+     * @param resource $context
+     *
+     * @return resource
+     */
+    protected function createSocket(string $remoteSocket, $context, ?int &$errno, ?string &$errstr)
+    {
+        return stream_socket_client(
+            $remoteSocket,
+            $errno,
+            $errstr,
+            $this->sendTimeoutSec + ($this->sendTimeoutUsec / 1000000),
+            STREAM_CLIENT_CONNECT,
+            $context
+        );
+    }
 }

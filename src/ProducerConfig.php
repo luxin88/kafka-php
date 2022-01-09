@@ -28,12 +28,12 @@ class ProducerConfig extends Config
      * @var mixed[]
      */
     protected static $defaults = [
-        'requiredAck'     => 1,
-        'timeout'         => 5000,
-        'isAsyn'          => false,
-        'requestTimeout'  => 6000,
+        'requiredAck' => 1,
+        'timeout' => 5000,
+        'isAsyn' => false,
+        'requestTimeout' => 6000,
         'produceInterval' => 100,
-        'compression'     => Protocol\Protocol::COMPRESSION_NONE,
+        'compression' => Protocol\Protocol::COMPRESSION_NONE,
     ];
 
     /**
@@ -91,7 +91,7 @@ class ProducerConfig extends Config
 
     public function setCompression(int $compression): void
     {
-        if (! in_array($compression, self::COMPRESSION_OPTIONS, true)) {
+        if (!in_array($compression, self::COMPRESSION_OPTIONS, true)) {
             throw new Exception\Config('Compression must be one the Kafka\Protocol\Produce::COMPRESSION_* constants');
         }
 

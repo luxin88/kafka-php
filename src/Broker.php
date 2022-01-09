@@ -63,19 +63,19 @@ class Broker
         $this->config = $config;
     }
 
-    public function setGroupBrokerId(int $brokerId): void
-    {
-        $this->groupBrokerId = $brokerId;
-    }
-
     public function getGroupBrokerId(): int
     {
         return $this->groupBrokerId;
     }
 
+    public function setGroupBrokerId(int $brokerId): void
+    {
+        $this->groupBrokerId = $brokerId;
+    }
+
     /**
      * @param mixed[][] $topics
-     * @param mixed[]   $brokersResult
+     * @param mixed[] $brokersResult
      */
     public function setData(array $topics, array $brokersResult): bool
     {
@@ -95,7 +95,7 @@ class Broker
 
         $newTopics = [];
         foreach ($topics as $topic) {
-            if ((int) $topic['errorCode'] !== Protocol::NO_ERROR) {
+            if ((int)$topic['errorCode'] !== Protocol::NO_ERROR) {
                 $this->error('Parse metadata for topic is error, error:' . Protocol::getError($topic['errorCode']));
                 continue;
             }
@@ -134,26 +134,21 @@ class Broker
         return $this->brokers;
     }
 
-    public function getMetaConnect(string $key, bool $modeSync = false): ?CommonSocket
-    {
-        return $this->getConnect($key, 'metaSockets', $modeSync);
-    }
-
     public function getRandConnect(bool $modeSync = false): ?CommonSocket
     {
         $nodeIds = array_keys($this->brokers);
         shuffle($nodeIds);
 
-        if (! isset($nodeIds[0])) {
+        if (!isset($nodeIds[0])) {
             return null;
         }
 
-        return $this->getMetaConnect((string) $nodeIds[0], $modeSync);
+        return $this->getMetaConnect((string)$nodeIds[0], $modeSync);
     }
 
-    public function getDataConnect(string $key, bool $modeSync = false): ?CommonSocket
+    public function getMetaConnect(string $key, bool $modeSync = false): ?CommonSocket
     {
-        return $this->getConnect($key, 'dataSockets', $modeSync);
+        return $this->getConnect($key, 'metaSockets', $modeSync);
     }
 
     public function getConnect(string $key, string $type, bool $modeSync = false): ?CommonSocket
@@ -182,12 +177,12 @@ class Broker
             [$host, $port] = explode(':', $key);
         }
 
-        if ($host === null || $port === null || (! $modeSync && $this->process === null)) {
+        if ($host === null || $port === null || (!$modeSync && $this->process === null)) {
             return null;
         }
 
         try {
-            $socket = $this->getSocket((string) $host, (int) $port, $modeSync);
+            $socket = $this->getSocket((string)$host, (int)$port, $modeSync);
 
             if ($socket instanceof Socket && $this->process !== null) {
                 $socket->setOnReadable($this->process);
@@ -203,17 +198,6 @@ class Broker
         }
     }
 
-    public function clear(): void
-    {
-        foreach ($this->metaSockets as $key => $socket) {
-            $socket->close();
-        }
-        foreach ($this->dataSockets as $key => $socket) {
-            $socket->close();
-        }
-        $this->brokers = [];
-    }
-
     /**
      * @throws \Kafka\Exception
      */
@@ -227,7 +211,6 @@ class Broker
 
         return new Socket($host, $port, $this->config, $saslProvider);
     }
-
 
     /**
      * @throws \Kafka\Exception
@@ -250,7 +233,7 @@ class Broker
 
         $securityProtocol = $this->config->getSecurityProtocol();
 
-        $this->config->setSslEnable(! in_array($securityProtocol, $plainConnections, true));
+        $this->config->setSslEnable(!in_array($securityProtocol, $plainConnections, true));
 
         if (in_array($securityProtocol, $saslConnections, true)) {
             return $this->getSaslMechanismProvider($this->config);
@@ -265,8 +248,8 @@ class Broker
     private function getSaslMechanismProvider(Config $config): SaslMechanism
     {
         $mechanism = $config->getSaslMechanism();
-        $username  = $config->getSaslUsername();
-        $password  = $config->getSaslPassword();
+        $username = $config->getSaslUsername();
+        $password = $config->getSaslPassword();
 
         switch ($mechanism) {
             case Config::SASL_MECHANISMS_PLAIN:
@@ -280,5 +263,21 @@ class Broker
         }
 
         throw new Exception(sprintf('"%s" is an invalid SASL mechanism', $mechanism));
+    }
+
+    public function getDataConnect(string $key, bool $modeSync = false): ?CommonSocket
+    {
+        return $this->getConnect($key, 'dataSockets', $modeSync);
+    }
+
+    public function clear(): void
+    {
+        foreach ($this->metaSockets as $key => $socket) {
+            $socket->close();
+        }
+        foreach ($this->dataSockets as $key => $socket) {
+            $socket->close();
+        }
+        $this->brokers = [];
     }
 }

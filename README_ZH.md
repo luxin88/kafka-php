@@ -3,22 +3,20 @@ Kafka-php
 
 [English Document](README.md)
 
-[![QQ Group](https://img.shields.io/badge/QQ%20Group-657517955-brightgreen.svg)]()
-[![Build Status](https://travis-ci.org/weiboad/kafka-php.svg?branch=master)](https://travis-ci.org/weiboad/kafka-php)
-[![Packagist](https://img.shields.io/packagist/dm/nmred/kafka-php.svg?style=plastic)]()
-[![Packagist](https://img.shields.io/packagist/dd/nmred/kafka-php.svg?style=plastic)]()
-[![Packagist](https://img.shields.io/packagist/dt/nmred/kafka-php.svg?style=plastic)]()
-[![GitHub issues](https://img.shields.io/github/issues/weiboad/kafka-php.svg?style=plastic)](https://github.com/weiboad/kafka-php/issues)
-[![GitHub forks](https://img.shields.io/github/forks/weiboad/kafka-php.svg?style=plastic)](https://github.com/weiboad/kafka-php/network)
-[![GitHub stars](https://img.shields.io/github/stars/weiboad/kafka-php.svg?style=plastic)](https://github.com/weiboad/kafka-php/stargazers)
-[![GitHub license](https://img.shields.io/badge/license-Apache%202-blue.svg?style=plastic)](https://raw.githubusercontent.com/weiboad/kafka-php/master/LICENSE)
+[![Packagist](https://img.shields.io/packagist/dm/luxin88/kafka-php.svg?style=plastic)]()
+[![Packagist](https://img.shields.io/packagist/dd/luxin88/kafka-php.svg?style=plastic)]()
+[![Packagist](https://img.shields.io/packagist/dt/luxin88/kafka-php.svg?style=plastic)]()
+[![GitHub issues](https://img.shields.io/github/issues/luxin88/kafka-php.svg?style=plastic)](https://github.com/luxin88/kafka-php/issues)
+[![GitHub forks](https://img.shields.io/github/forks/luxin88/kafka-php.svg?style=plastic)](https://github.com/luxin88/kafka-php/network)
+[![GitHub stars](https://img.shields.io/github/stars/luxin88/kafka-php.svg?style=plastic)](https://github.com/luxin88/kafka-php/stargazers)
+[![GitHub license](https://img.shields.io/badge/license-Apache%202-blue.svg?style=plastic)](https://raw.githubusercontent.com/luxin88/kafka-php/master/LICENSE)
 
 Kafka-php 使用纯粹的PHP 编写的 kafka 客户端，目前支持 0.8.x 以上版本的 Kafka，该项目 v0.2.x 和 v0.1.x 不兼容，如果使用原有的 v0.1.x 的可以参照文档 [Kafka PHP v0.1.x Document](https://github.com/weiboad/kafka-php/blob/v0.1.6/README.md), 不过建议切换到 v0.2.x 上。v0.2.x 使用 PHP 异步执行的方式来和kafka broker 交互，较 v0.1.x 更加稳定高效, 由于使用 PHP 语言编写所以不用编译任何的扩展就可以使用，降低了接入与维护成本
 
 
 ## 安装环境要求
 
-* PHP 版本大于 5.5
+* PHP 版本大于 7.1
 * Kafka Server 版本大于 0.8.0
 * 消费模块 Kafka Server 版本需要大于 0.9.0
 
@@ -26,12 +24,12 @@ Kafka-php 使用纯粹的PHP 编写的 kafka 客户端，目前支持 0.8.x 以�
 
 ## 使用 Composer 安装
 
-添加 composer 依赖 `nmred/kafka-php` 到项目的 `composer.json` 文件中即可，如：
+添加 composer 依赖 `luxin88/kafka-php` 到项目的 `composer.json` 文件中即可，如：
 
 ```
 {
 	"require": {
-		"nmred/kafka-php": "0.2.*"
+		"luxin88/kafka-php": "0.2.*"
 	}
 }
 ```
@@ -145,10 +143,4 @@ $consumer->start(function($topic, $part, $message) {
 
 ## Basic Protocol
 
-基础协议 API 调用方式见 [Example](https://github.com/weiboad/kafka-php/tree/master/example)
-
-## QQ 群号 
-
-群一： 531522091 （已满）
-群二： 657517955
-![QQ Group](docs/qq_group.png)
+基础协议 API 调用方式见 [Example](https://github.com/luxin88/kafka-php/tree/master/example)

@@ -18,7 +18,7 @@ final class AsyncProducerTest extends ProducerTest
         $this->configureProducer();
 
         $messagesSent = false;
-        $error        = null;
+        $error = null;
 
         $producer = new Producer([$this, 'createMessages']);
         $producer->success(
@@ -41,7 +41,7 @@ final class AsyncProducerTest extends ProducerTest
 
         self::assertTrue(
             $messagesSent,
-            'It was not possible to send the messages, reason: ' . Protocol::getError((int) $error)
+            'It was not possible to send the messages, reason: ' . Protocol::getError((int)$error)
         );
     }
 }

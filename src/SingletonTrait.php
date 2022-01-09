@@ -15,6 +15,10 @@ trait SingletonTrait
      */
     protected static $instance;
 
+    private function __construct()
+    {
+    }
+
     /**
      * Need to be compatible php 7.1.x, so this scene cannot be specified return type `object`
      * @return object
@@ -26,9 +30,5 @@ trait SingletonTrait
         }
 
         return static::$instance;
-    }
-
-    private function __construct()
-    {
     }
 }

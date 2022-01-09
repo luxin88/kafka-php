@@ -20,6 +20,22 @@ trait LoggerTrait
     }
 
     /**
+     * Logs with an arbitrary level.
+     *
+     * @param mixed $level
+     * @param string $message
+     * @param mixed[] $context
+     *
+     */
+    public function log($level, $message, array $context = []): void
+    {
+        if ($this->logger === null) {
+            $this->logger = new NullLogger();
+        }
+        $this->logger->log($level, $message, $context);
+    }
+
+    /**
      * Action must be taken immediately.
      *
      * Example: Entire website down, database unavailable, etc. This should
@@ -105,21 +121,5 @@ trait LoggerTrait
     public function debug(string $message, array $context = []): void
     {
         $this->log(LogLevel::DEBUG, $message, $context);
-    }
-
-    /**
-     * Logs with an arbitrary level.
-     *
-     * @param mixed   $level
-     * @param string  $message
-     * @param mixed[] $context
-     *
-     */
-    public function log($level, $message, array $context = []): void
-    {
-        if ($this->logger === null) {
-            $this->logger = new NullLogger();
-        }
-        $this->logger->log($level, $message, $context);
     }
 }

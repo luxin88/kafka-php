@@ -9,14 +9,21 @@ use function stream_context_get_options;
 class Simple
 {
     /**
+     * @var Stream|MockObject
+     */
+    protected static $mock;
+    /**
      * @var resource
      */
     public $context;
 
     /**
-     * @var Stream|MockObject
+     * @param Stream|MockObject $mock
      */
-    protected static $mock;
+    public static function setMock(Stream $mock): void
+    {
+        self::$mock = $mock;
+    }
 
     public function stream_open(string $path, string $mode, int $options): bool
     {
@@ -78,13 +85,5 @@ class Simple
         }
 
         return true;
-    }
-
-    /**
-     * @param Stream|MockObject $mock
-     */
-    public static function setMock(Stream $mock): void
-    {
-        self::$mock = $mock;
     }
 }

@@ -40,7 +40,7 @@ class SocketSync extends CommonSocket
      */
     public function read($data): string
     {
-        return $this->readBlocking((int) $data);
+        return $this->readBlocking((int)$data);
     }
 
     /**

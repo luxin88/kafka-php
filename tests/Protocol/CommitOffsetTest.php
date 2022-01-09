@@ -43,7 +43,7 @@ final class CommitOffsetTest extends TestCase
         ];
 
         $expected = '00000071000800020000000800096b61666b612d70687000047465737400000002002e6b61666b612d7068702d63376533643430612d353764382d343232302d393532332d6365626663653961303638350000000000008ca0000000010004746573740000000100000000000000000000002d0000';
-        $test     = $this->commit->encode($data);
+        $test = $this->commit->encode($data);
 
         self::assertSame($expected, bin2hex($test));
     }
@@ -66,7 +66,7 @@ final class CommitOffsetTest extends TestCase
         ];
 
         $expected = '00000043000800020000000800096b61666b612d706870000474657374ffffffff0000ffffffffffffffff000000010004746573740000000100000000000000000000002d0000';
-        $test     = $this->commit->encode($data);
+        $test = $this->commit->encode($data);
 
         self::assertSame($expected, bin2hex($test));
     }
@@ -171,7 +171,7 @@ final class CommitOffsetTest extends TestCase
 
     public function testDecode(): void
     {
-        $data     = '0000000100047465737400000001000000000000';
+        $data = '0000000100047465737400000001000000000000';
         $expected = '[{"topicName":"test","partitions":[{"partition":0,"errorCode":0}]}]';
 
         $test = $this->commit->decode(hex2bin($data));

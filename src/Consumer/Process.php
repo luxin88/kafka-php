@@ -742,7 +742,7 @@ class Process
                 foreach ($topic['partitions'] as $partId) {
                     $item['partitions'][] = [
                         'partition_id' => $partId,
-                        'offset' => isset($consumerOffsets[$topic['topic_name']][$partId]) ? $consumerOffsets[$topic['topic_name']][$partId] : 0,
+                        'offset' => $consumerOffsets[$topic['topic_name']][$partId] ?? 0,
                         'max_bytes' => $this->getConfig()->getMaxBytes(),
                     ];
                 }

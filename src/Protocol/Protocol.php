@@ -150,7 +150,10 @@ abstract class Protocol
     }
 
     /**
-     * @param mixed[] $array
+     * @param array $array
+     * @param callable $func
+     * @param int|null $options
+     * @return string
      */
     public static function encodeArray(array $array, callable $func, ?int $options = null): string
     {
@@ -218,19 +221,16 @@ abstract class Protocol
     public function getApiVersion(int $apikey): int
     {
         switch ($apikey) {
+            case self::GROUP_COORDINATOR_REQUEST:
+            case self::SYNC_GROUP_REQUEST:
+            case self::LEAVE_GROUP_REQUEST:
+            case self::HEART_BEAT_REQUEST:
+            case self::LIST_GROUPS_REQUEST:
+            case self::DESCRIBE_GROUPS_REQUEST:
             case self::METADATA_REQUEST:
                 return self::API_VERSION0;
-            case self::PRODUCE_REQUEST:
-                if (version_compare($this->version, '0.10.0') >= 0) {
-                    return self::API_VERSION2;
-                }
-
-                if (version_compare($this->version, '0.9.0') >= 0) {
-                    return self::API_VERSION1;
-                }
-
-                return self::API_VERSION0;
             case self::FETCH_REQUEST:
+            case self::PRODUCE_REQUEST:
                 if (version_compare($this->version, '0.10.0') >= 0) {
                     return self::API_VERSION2;
                 }
@@ -247,8 +247,6 @@ abstract class Protocol
 //                } else {
 //                    return self::API_VERSION0;
 //                }
-                return self::API_VERSION0;
-            case self::GROUP_COORDINATOR_REQUEST:
                 return self::API_VERSION0;
             case self::OFFSET_COMMIT_REQUEST:
                 if (version_compare($this->version, '0.9.0') >= 0) {
@@ -272,16 +270,6 @@ abstract class Protocol
                 }
 
                 return self::API_VERSION0; // supported in 0.9.0.0 and greater
-            case self::SYNC_GROUP_REQUEST:
-                return self::API_VERSION0;
-            case self::HEART_BEAT_REQUEST:
-                return self::API_VERSION0;
-            case self::LEAVE_GROUP_REQUEST:
-                return self::API_VERSION0;
-            case self::LIST_GROUPS_REQUEST:
-                return self::API_VERSION0;
-            case self::DESCRIBE_GROUPS_REQUEST:
-                return self::API_VERSION0;
         }
 
         // default
@@ -343,9 +331,11 @@ abstract class Protocol
     }
 
     /**
-     * @return mixed[]
+     * @param string $data
+     * @param string $bytes
+     * @param int $compression
+     * @return array
      *
-     * @throws ProtocolException
      */
     public function decodeString(string $data, string $bytes, int $compression = self::COMPRESSION_NONE): array
     {
@@ -413,10 +403,8 @@ abstract class Protocol
             case self::BIT_B32:
                 $expectedLength = 4;
                 break;
-            case self::BIT_B16:
-                $expectedLength = 2;
-                break;
             case self::BIT_B16_SIGNED:
+            case self::BIT_B16:
                 $expectedLength = 2;
                 break;
             case self::BIT_B8:
@@ -470,6 +458,11 @@ abstract class Protocol
         return array_map($convert, $bits);
     }
 
+    /**
+     * @param string $string
+     * @param int $compression
+     * @return string
+     */
     private static function decompress(string $string, int $compression): string
     {
         if ($compression === self::COMPRESSION_NONE) {
@@ -488,11 +481,12 @@ abstract class Protocol
     }
 
     /**
+     * @param string $data
+     * @param callable $func
      * @param mixed|null $options
      *
-     * @return mixed[]
+     * @return array
      *
-     * @throws ProtocolException
      */
     public function decodeArray(string $data, callable $func, $options = null): array
     {
@@ -525,9 +519,10 @@ abstract class Protocol
     }
 
     /**
-     * @return mixed[]
+     * @param string $data
+     * @param string $bit
+     * @return array
      *
-     * @throws ProtocolException
      */
     public function decodePrimitiveArray(string $data, string $bit): array
     {
@@ -561,14 +556,15 @@ abstract class Protocol
     }
 
     /**
-     * @param mixed[] $payloads
+     * @param array $payloads
      *
      * @throws ProtocolException
      */
     abstract public function encode(array $payloads = []): string;
 
     /**
-     * @return mixed[]
+     * @param string $data
+     * @return array
      *
      * @throws ProtocolException
      */
